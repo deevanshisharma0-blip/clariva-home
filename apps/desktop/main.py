@@ -1,6 +1,7 @@
 """
 NexusOS Desktop Launcher
-Starts FastAPI backend + Next.js UI, then opens a native PyWebView window.
+Starts FastAPI backend (which serves the pre-built static frontend),
+then opens a native PyWebView window.
 """
 import sys
 import os
@@ -18,11 +19,11 @@ API_DIR = ROOT / "apps" / "api"
 WEB_DIR = ROOT / "apps" / "web"
 DATA_DIR = ROOT / "data"
 API_PORT = 8000
-WEB_PORT = 3000
 API_HOST = os.environ.get("NEXUS_HOST", "127.0.0.1")
-WEB_HOST = os.environ.get("NEXUS_WEB_HOST", "127.0.0.1")
-API_URL = f"http://127.0.0.1:{API_PORT}"
-WEB_URL = f"http://127.0.0.1:{WEB_PORT}"
+API_URL  = f"http://127.0.0.1:{API_PORT}"
+
+# Static export — FastAPI serves the frontend
+STATIC_OUT = WEB_DIR / "out"
 
 _procs: list[subprocess.Popen] = []
 
@@ -39,34 +40,12 @@ def find_python() -> str:
     return sys.executable
 
 
-def find_npm() -> str:
-    import shutil
-    return shutil.which("npm") or "npm"
-
-
-def wait_for_http(url: str, timeout: int = 60) -> bool:
-    host = "127.0.0.1"
-    path = "/api/status"
+def wait_for_api(timeout: int = 90) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            conn = http.client.HTTPConnection(host, API_PORT, timeout=2)
-            conn.request("GET", path)
-            res = conn.getresponse()
-            if res.status < 500:
-                return True
-        except Exception:
-            pass
-        time.sleep(0.75)
-    return False
-
-
-def wait_for_web(timeout: int = 90) -> bool:
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        try:
-            conn = http.client.HTTPConnection("127.0.0.1", WEB_PORT, timeout=2)
-            conn.request("GET", "/")
+            conn = http.client.HTTPConnection("127.0.0.1", API_PORT, timeout=2)
+            conn.request("GET", "/api/status")
             res = conn.getresponse()
             if res.status < 500:
                 return True
@@ -81,29 +60,10 @@ def start_api():
     DATA_DIR.mkdir(exist_ok=True)
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
     proc = subprocess.Popen(
-        [python, "-m", "uvicorn", "apps.api.main:app", "--host", API_HOST, "--port", str(API_PORT)],
+        [python, "-m", "uvicorn", "apps.api.main:app",
+         "--host", API_HOST, "--port", str(API_PORT)],
         cwd=str(ROOT),
         env=env,
-        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
-    )
-    _procs.append(proc)
-    return proc
-
-
-def start_web():
-    # If static export exists, API serves it — no separate server needed
-    static = WEB_DIR / ".next" / "standalone"
-    out = WEB_DIR / "out"
-    if out.exists() or static.exists():
-        return None
-
-    npm = find_npm()
-    cmd = [npm, "run", "dev"]
-    if WEB_HOST != "127.0.0.1":
-        cmd = [npm, "run", "dev", "--", "-H", WEB_HOST]
-    proc = subprocess.Popen(
-        cmd,
-        cwd=str(WEB_DIR),
         creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
     )
     _procs.append(proc)
@@ -127,27 +87,25 @@ def main():
     print("║        NEXUS OS — Starting up        ║")
     print("╚══════════════════════════════════════╝")
 
-    # Start backend
+    # Start FastAPI backend (also serves the static frontend from apps/web/out/)
     print("[nexus] Starting API backend…")
     start_api()
 
-    # Start web UI (if not pre-built)
-    web_proc = start_web()
-    if web_proc:
-        print("[nexus] Starting Next.js dev server…")
-
-    # Wait for API
+    # Wait for API to be ready
     print("[nexus] Waiting for API…")
-    if not wait_for_http(API_URL, timeout=60):
-        print("[nexus] WARNING: API did not respond in time")
+    if wait_for_api(timeout=90):
+        print("[nexus] API ready ✓")
+    else:
+        print("[nexus] WARNING: API did not respond in time — opening anyway")
 
-    # Wait for web UI
-    target_url = WEB_URL
-    if web_proc:
-        print("[nexus] Waiting for web UI…")
-        if not wait_for_web(timeout=90):
-            print("[nexus] WARNING: Web UI did not respond — falling back to API")
-            target_url = f"{API_URL}/"
+    # API serves the static frontend at /  (apps/web/out/)
+    target_url = f"{API_URL}/"
+    static_ready = STATIC_OUT.exists() and (STATIC_OUT / "index.html").exists()
+
+    if static_ready:
+        print(f"[nexus] Serving pre-built frontend from {STATIC_OUT}")
+    else:
+        print("[nexus] WARNING: No pre-built frontend found — open browser manually at http://localhost:8000")
 
     print(f"[nexus] Opening window → {target_url}")
 
