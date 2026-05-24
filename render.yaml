@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: nexusos
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/status
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        value: https://qjclbnbzntdxfjuomdwr.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqY2xibmJ6bnRkeGZqdW9tZHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1ODAyNTcsImV4cCI6MjA5NTE1NjI1N30.kmPTOK58FM-SFHVV8qdKLUt_6u4ejK38oTErblidf_4
+      - key: SLACK_WEBHOOK_ALERTS
+        sync: false
+      - key: SLACK_WEBHOOK_BRIEFING
+        sync: false
+      - key: IONOS_DIGEST_RECIPIENT
+        value: info.vereine@gmail.com
+      - key: DEBUG
+        value: "false"
