@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #07070e;
+  --surface: #0d0d1a;
+  --card: #12121f;
+  --border: rgba(255,255,255,0.07);
+  --primary: #7c3aed;
+  --gold: #f59e0b;
+  --text: #f1f5f9;
+  --muted: #64748b;
+}
+
+html, body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; height: 100%; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Glow effects */
+.glow-primary { box-shadow: 0 0 20px rgba(124,58,237,0.3); }
+.glow-gold { box-shadow: 0 0 20px rgba(245,158,11,0.3); }
+.glow-success { box-shadow: 0 0 20px rgba(16,185,129,0.3); }
+
+/* Glass card */
+.glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.07); }
+
+/* Gradient text */
+.gradient-text { background: linear-gradient(135deg, #7c3aed, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.gradient-text-gold { background: linear-gradient(135deg, #f59e0b, #fbbf24); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+/* Animated gradient border */
+.gradient-border { position: relative; }
+.gradient-border::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(135deg, #7c3aed33, #f59e0b33); z-index: -1; }
+
+/* Status indicators */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot.running { background: #10b981; box-shadow: 0 0 6px #10b981; animation: pulse 2s infinite; }
+.status-dot.idle { background: #475569; }
+.status-dot.error { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+.status-dot.pending { background: #f59e0b; animation: pulse 2s infinite; }
