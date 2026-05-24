@@ -2,26 +2,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# ── System dependencies ────────────────────────────────────────────────────────
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Python dependencies
+COPY apps/api/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# ── Copy source ────────────────────────────────────────────────────────────────
+# Copy full app (includes pre-built apps/web/out/)
 COPY . .
 
-# ── Python dependencies ────────────────────────────────────────────────────────
-RUN pip install --no-cache-dir -r apps/api/requirements.txt
-
-# ── Build Next.js frontend (static export → apps/web/out/) ────────────────────
-WORKDIR /app/apps/web
-RUN npm ci && npm run build
-
-# ── Back to app root ───────────────────────────────────────────────────────────
-WORKDIR /app
-
-# Keep a data dir for any SQLite fallback / local dev
+# Keep a data dir for SQLite fallback
 RUN mkdir -p /app/data
 
 EXPOSE 8000

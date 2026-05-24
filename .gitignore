@@ -24,7 +24,7 @@ data/
 
 # Next.js
 apps/web/.next/
-apps/web/out/
+# apps/web/out/ — committed so Render/Railway don't need to build Node.js
 apps/web/node_modules/
 
 # OS
