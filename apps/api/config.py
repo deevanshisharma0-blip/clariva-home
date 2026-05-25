@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     cj_api_key: str = ""
     openrouter_api_key: str = ""
     ollama_url: str = "http://localhost:11434"
-    ollama_model: str = "gemma3:4b"  # gemma3 4B (3.3 GB) — fits in 7.6 GB RAM; gemma4 needs 9.8 GB
+    ollama_model: str = "llama3.2:latest"  # best speed/quality on this CPU: ~30s/response
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # Supabase

@@ -261,8 +261,8 @@ async def chat_with_agent(
                 resp.raise_for_status()
                 return resp.json().get("message", {}).get("content", "")
 
-        # Try preferred model (gemma3:4b), then fallback candidates
-        fallback_models = [cfg.ollama_model, "gemma3:4b", "llama3.2:latest", "llama3.2:1b"]
+        # Try preferred model first, then fallbacks in order of quality
+        fallback_models = [cfg.ollama_model, "llama3.2:latest", "llama3.2:1b"]
         seen: set[str] = set()
         for model in fallback_models:
             if model in seen:
