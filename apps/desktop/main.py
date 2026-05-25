@@ -58,7 +58,18 @@ def wait_for_api(timeout: int = 90) -> bool:
 def start_api():
     python = find_python()
     DATA_DIR.mkdir(exist_ok=True)
+    # Load .env if present so API has all secrets
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
+    dot_env = ROOT / ".env"
+    if dot_env.exists():
+        for line in dot_env.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, _, v = line.partition("=")
+                env.setdefault(k.strip(), v.strip())
+    # Ensure SQLite fallback when no DATABASE_URL configured
+    if not env.get("DATABASE_URL"):
+        env["DATABASE_URL"] = f"sqlite+aiosqlite:///{DATA_DIR}/nexus.db"
     proc = subprocess.Popen(
         [python, "-m", "uvicorn", "apps.api.main:app",
          "--host", API_HOST, "--port", str(API_PORT)],

@@ -24,5 +24,9 @@ services:
         value: 224aab94934745f586e7db486f377741
       - key: OLLAMA_URL
         value: ""
+      - key: SHOPIFY_STORE
+        value: lumera-aura.myshopify.com
+      - key: SHOPIFY_TOKEN
+        sync: false
       - key: DEBUG
         value: "false"
