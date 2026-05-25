@@ -100,11 +100,40 @@ export interface SystemHealth {
   api: string;
 }
 
+export interface Order {
+  id: number;
+  business_id: number;
+  shopify_order_id: string;
+  shopify_order_number: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  shipping_country: string | null;
+  total_price: number;
+  currency: string;
+  fulfillment_status: string;
+  cj_order_id: string | null;
+  cj_tracking_number: string | null;
+  cj_status: string | null;
+  shopify_created_at: string | null;
+  cj_submitted_at: string | null;
+  created_at: string;
+}
+
+export interface OrderStats {
+  total_orders: number;
+  total_revenue_cad: number;
+  fulfilled: number;
+  pending: number;
+  failed: number;
+  fulfillment_rate: number;
+}
+
 export type Section =
   | "tasks"
   | "executive"
   | "agents"
   | "approvals"
+  | "orders"
   | "products"
   | "creative"
   | "marketing"

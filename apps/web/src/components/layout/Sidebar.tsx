@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   BarChart3, Bot, CheckSquare, Package, Sparkles, Megaphone,
   DollarSign, LineChart, Activity, Store, GitBranch, Settings,
-  ChevronDown, Plus, Zap, Brain,
+  ChevronDown, Plus, Zap, Brain, ShoppingBag,
 } from "lucide-react";
 import type { Section, Business } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const NAV: { id: Section; label: string; icon: React.ElementType; badge?: number
   { id: "executive",    label: "Executive",    icon: BarChart3 },
   { id: "agents",       label: "Agents",       icon: Bot },
   { id: "approvals",    label: "Approvals",    icon: CheckSquare },
+  { id: "orders",       label: "Orders",       icon: ShoppingBag },
   { id: "products",     label: "Products",     icon: Package },
   { id: "creative",     label: "Creative",     icon: Sparkles },
   { id: "marketing",    label: "Marketing",    icon: Megaphone },

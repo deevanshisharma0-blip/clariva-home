@@ -1,4 +1,5 @@
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+export const API_URL = BASE_URL;
 export const WS_URL = BASE_URL.replace(/^http/, "ws") + "/ws";
 const BASE = BASE_URL;
 
@@ -82,5 +83,12 @@ export const api = {
   tasks: {
     get: (bizId: number) => req(`/api/tasks/${bizId}`),
     refreshBriefing: (bizId: number) => req(`/api/tasks/${bizId}/refresh-briefing`, { method: "POST" }),
+  },
+
+  orders: {
+    list: (bizId: number, limit = 50) => req(`/api/orders/${bizId}?limit=${limit}`),
+    stats: (bizId: number) => req(`/api/orders/${bizId}/stats`),
+    syncTracking: (orderId: number) =>
+      req(`/api/orders/${orderId}/sync-tracking`, { method: "POST" }),
   },
 };

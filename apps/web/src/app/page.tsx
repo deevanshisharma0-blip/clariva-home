@@ -15,6 +15,7 @@ import Observability        from "@/components/sections/Observability";
 import SettingsPanel        from "@/components/sections/SettingsPanel";
 import Placeholder          from "@/components/sections/Placeholder";
 import AITaskHub           from "@/components/sections/AITaskHub";
+import OrdersDashboard     from "@/components/sections/OrdersDashboard";
 import { api } from "@/lib/api";
 import type { Business, Section } from "@/lib/types";
 
@@ -95,6 +96,7 @@ export default function Home() {
       case "executive":    return <ExecutiveDashboard bizId={bizId} />;
       case "agents":       return <AgentControlCenter bizId={bizId} />;
       case "approvals":    return <ApprovalCenter bizId={bizId} />;
+      case "orders":       return <OrdersDashboard bizId={bizId} />;
       case "products":     return <ProductIntelligence bizId={bizId} />;
       case "creative":     return <CreativeStudio bizId={bizId} />;
       case "marketing":    return <MarketingCommand bizId={bizId} />;
