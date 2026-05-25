@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     debug: bool = True
     database_url: str = f"sqlite+aiosqlite:///{ROOT}/data/nexus.db"
     anthropic_api_key: str = ""
+    shopify_store: str = "lumera-aura.myshopify.com"
+    shopify_token: str = ""  # CLI OAuth token (atkn_2.*) or Custom App token (shpat_*)
     shopify_api_key: str = ""
     shopify_api_secret: str = ""
     cj_api_email: str = ""

@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { Play, RefreshCw, AlertTriangle, CheckCircle, Clock, Cpu } from "lucide-react";
+import { Play, RefreshCw, AlertTriangle, MessageSquare, Cpu } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Agent } from "@/lib/types";
 import { cn, timeAgo } from "@/lib/utils";
+import AgentChat from "./AgentChat";
 
 const DEPT_COLORS: Record<string, string> = {
   Executive: "bg-purple-500/10 text-purple-400 border-purple-500/20",
@@ -37,7 +38,7 @@ function StatusDot({ status }: { status: string }) {
   return <span className={cn("w-2 h-2 rounded-full inline-block shrink-0", cls, status === "running" && "animate-pulse")} />;
 }
 
-function AgentCard({ agent, onRun }: { agent: Agent; onRun: (a: Agent) => void }) {
+function AgentCard({ agent, onRun, onChat }: { agent: Agent; onRun: (a: Agent) => void; onChat: (a: Agent) => void }) {
   const deptClass = DEPT_COLORS[agent.department] ?? "bg-white/5 text-text-secondary border-white/10";
   return (
     <div className={cn(
@@ -74,18 +75,28 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: (a: Agent) => void }
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1">
         <div className="text-[10px] text-muted">
           {agent.last_run ? timeAgo(agent.last_run) : "Never run"} · {agent.tasks_completed} done
         </div>
-        <button
-          onClick={() => onRun(agent)}
-          disabled={agent.status === "running"}
-          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-primary-dim text-primary-light hover:bg-primary hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {agent.status === "running" ? <RefreshCw size={10} className="animate-spin" /> : <Play size={10} />}
-          {agent.status === "running" ? "Running" : "Run"}
-        </button>
+        <div className="flex gap-1 shrink-0">
+          <button
+            onClick={() => onChat(agent)}
+            title="Chat with agent"
+            className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-surface text-muted hover:bg-primary-dim hover:text-primary-light transition-colors border border-border"
+          >
+            <MessageSquare size={10} />
+            Chat
+          </button>
+          <button
+            onClick={() => onRun(agent)}
+            disabled={agent.status === "running"}
+            className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-primary-dim text-primary-light hover:bg-primary hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {agent.status === "running" ? <RefreshCw size={10} className="animate-spin" /> : <Play size={10} />}
+            {agent.status === "running" ? "Running" : "Run"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -95,6 +106,7 @@ export default function AgentControlCenter({ bizId }: { bizId: number }) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningAgent, setRunningAgent] = useState<string | null>(null);
+  const [chatAgent, setChatAgent] = useState<Agent | null>(null);
 
   const load = useCallback(() => {
     api.agents.list(bizId).then((data) => {
@@ -113,6 +125,8 @@ export default function AgentControlCenter({ bizId }: { bizId: number }) {
     } catch (e) { console.error(e); }
     finally { setTimeout(() => setRunningAgent(null), 2000); }
   };
+
+  const handleChat = (agent: Agent) => setChatAgent(agent);
 
   const byDept = agents.reduce<Record<string, Agent[]>>((acc, a) => {
     (acc[a.department] ??= []).push(a);
@@ -148,11 +162,22 @@ export default function AgentControlCenter({ bizId }: { bizId: number }) {
             <h3 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">{dept}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {deptAgents.map((a) => (
-                <AgentCard key={a.id} agent={a} onRun={handleRun} />
+                <AgentCard key={a.id} agent={a} onRun={handleRun} onChat={handleChat} />
               ))}
             </div>
           </div>
         ))
+      )}
+
+      {/* Agent Chat Panel */}
+      {chatAgent && (
+        <AgentChat
+          bizId={bizId}
+          agentId={chatAgent.agent_id}
+          agentName={chatAgent.name}
+          agentIcon={ICONS[chatAgent.agent_id] ?? "🤖"}
+          onClose={() => setChatAgent(null)}
+        />
       )}
     </div>
   );

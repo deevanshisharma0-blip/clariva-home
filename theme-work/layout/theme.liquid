@@ -1,0 +1,195 @@
+{%- assign p_prestige = all_products['lumera-prestige-the-signature-ritual-mask'] -%}
+{%- assign p_aura     = all_products['lumera-aura-the-chromatic-shield-mask'] -%}
+{%- assign p_spectrum = all_products['lumera-spectrum-the-dual-light-renewal-mask'] -%}
+<!DOCTYPE html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+{{ content_for_header }}
+<title>
+  {%- if template.name == 'index' -%}LUMÈRA — Advanced Red Light Therapy Masks{%- else -%}{{ page_title }} | LUMÈRA{%- endif -%}
+</title>
+<meta name="description" content="{%- if page_description -%}{{ page_description | escape }}{%- else -%}LUMÈRA delivers dual-spectrum 630nm + 850nm red light therapy. Three masks. One science.{%- endif -%}">
+<meta property="og:title" content="LUMÈRA — Advanced Red Light Therapy Masks">
+<meta property="og:description" content="Dual-spectrum 630nm + 850nm photobiomodulation. The ritual your skin has been waiting for.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* RESET */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:#050508;color:#fff;font-family:'Inter','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6;padding-top:68px}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+ul{list-style:none}
+button{font-family:inherit}
+
+/* TOKENS */
+:root{
+  --blk:#050508;--blk2:#08080b;--blk3:#0d0d10;--blk4:#111116;
+  --gold:#C4A35A;--gold-dim:rgba(196,163,90,.12);--border:#1c1c24;--border2:#222228;
+  --text:#fff;--muted:#888;--muted2:#555;--muted3:#333;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Inter','Helvetica Neue',sans-serif;
+}
+
+/* TYPOGRAPHY UTILITIES */
+.l-eyebrow{font-family:var(--sans);font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:14px}
+.l-section-h2{font-family:var(--serif);font-size:clamp(28px,4vw,50px);font-weight:300;line-height:1.12;letter-spacing:.04em;margin-bottom:14px}
+.l-section-sub{font-family:var(--sans);font-size:13.5px;color:var(--muted);max-width:520px;margin:0 auto;line-height:1.9}
+.l-section-header{text-align:center;margin-bottom:64px}
+
+/* BUTTONS */
+.lbtn-gold{display:inline-block;padding:15px 32px;background:var(--gold);color:#050508;font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;border:none;cursor:pointer;transition:opacity .2s,transform .15s;line-height:1;text-align:center}
+.lbtn-gold:hover{opacity:.88;transform:translateY(-1px)}
+.lbtn-ghost{display:inline-block;padding:14px 30px;border:1px solid rgba(196,163,90,.4);color:var(--gold);font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;background:transparent;cursor:pointer;transition:all .2s;line-height:1;text-align:center}
+.lbtn-ghost:hover{border-color:var(--gold);background:var(--gold-dim)}
+.lbtn-outline{display:inline-block;padding:12px 24px;border:1px solid rgba(196,163,90,.3);color:var(--gold);font-family:var(--sans);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;background:transparent;cursor:pointer;transition:all .2s;line-height:1;text-align:center}
+.lbtn-outline:hover{border-color:var(--gold);background:var(--gold-dim)}
+.lbtn-lg{padding:17px 40px;font-size:11.5px}
+.lbtn-full{width:100%;display:block}
+
+/* NAV */
+#lnav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(5,5,8,.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.lnav-inner{max-width:1200px;margin:0 auto;padding:0 32px;height:68px;display:flex;align-items:center}
+.llogo{font-family:var(--serif);font-size:21px;font-weight:400;letter-spacing:.14em;color:var(--gold);margin-right:auto}
+.lnav-links{display:flex;gap:28px;margin-right:28px}
+.lnav-links li a{font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);transition:color .2s}
+.lnav-links li a:hover{color:var(--text)}
+.lnav-actions{display:flex;align-items:center;gap:16px}
+.lnav-cart{position:relative;display:flex;align-items:center;color:var(--muted);transition:color .2s;padding:4px}
+.lnav-cart svg{width:19px;height:19px}
+.lnav-cart:hover{color:var(--text)}
+.lnav-badge{position:absolute;top:-5px;right:-7px;background:var(--gold);color:#050508;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lnav-shop{font-family:var(--sans);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(196,163,90,.45);padding:9px 20px;transition:all .2s;white-space:nowrap}
+.lnav-shop:hover{background:var(--gold-dim);border-color:var(--gold)}
+.lnav-burger{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;padding:6px 0;margin-left:16px}
+.lnav-burger span{display:block;width:21px;height:1.5px;background:var(--muted);transition:all .25s}
+#lmobile-menu{display:none;flex-direction:column;background:var(--blk2);border-top:1px solid var(--border)}
+#lmobile-menu.open{display:flex}
+#lmobile-menu a{font-family:var(--sans);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding:15px 24px;border-bottom:1px solid var(--border);transition:color .2s}
+#lmobile-menu a:hover{color:var(--text)}
+
+/* FOOTER */
+.lfoot{background:var(--blk2);border-top:1px solid var(--border);padding:64px 32px 32px}
+.lfoot-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:240px 1fr;gap:64px;margin-bottom:48px}
+.lfoot-brand p{font-size:13px;color:var(--muted2);line-height:1.8;margin-top:14px;max-width:220px}
+.lfoot-brand .llogo{font-size:24px;display:block}
+.lfoot-links{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.lfoot-col strong{font-family:var(--sans);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#2e2e38;display:block;margin-bottom:14px}
+.lfoot-col a{font-size:13px;color:var(--muted2);display:block;margin-bottom:10px;transition:color .2s}
+.lfoot-col a:hover{color:var(--gold)}
+.lfoot-bottom{max-width:1200px;margin:0 auto;padding-top:24px;border-top:1px solid #0d0d10;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--muted3);line-height:1.7}
+.lfoot-disclaimer{max-width:540px;font-size:10.5px;color:#2a2a32;line-height:1.6}
+
+/* RESPONSIVE NAV + FOOTER */
+@media(max-width:900px){
+  .lnav-links,.lnav-shop{display:none}
+  .lnav-burger{display:flex}
+  .lfoot-inner{grid-template-columns:1fr}
+  .lfoot-links{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+  .lfoot-links{grid-template-columns:1fr}
+  .lfoot-bottom{flex-direction:column}
+  .lnav-inner{padding:0 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="lnav">
+  <div class="lnav-inner">
+    <a href="/" class="llogo">LUMÈRA</a>
+    <ul class="lnav-links">
+      <li><a href="/#collection">Collection</a></li>
+      <li><a href="/#ritual">The Ritual</a></li>
+      <li><a href="/#science">The Science</a></li>
+      <li><a href="/#faq">FAQ</a></li>
+    </ul>
+    <div class="lnav-actions">
+      <a href="/cart" class="lnav-cart" aria-label="Cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        {%- if cart.item_count > 0 -%}<span class="lnav-badge">{{ cart.item_count }}</span>{%- endif -%}
+      </a>
+      {%- if p_prestige != blank -%}
+        <a href="{{ p_prestige.url }}" class="lnav-shop">Shop Now</a>
+      {%- endif -%}
+    </div>
+    <button class="lnav-burger" aria-label="Menu" id="lburger">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div id="lmobile-menu">
+    <a href="/#collection">Collection</a>
+    <a href="/#ritual">The Ritual</a>
+    <a href="/#science">The Science</a>
+    <a href="/#faq">FAQ</a>
+    {%- if p_prestige != blank -%}<a href="{{ p_prestige.url }}">Prestige — {{ p_prestige.price | money }}</a>{%- endif -%}
+    {%- if p_aura != blank -%}<a href="{{ p_aura.url }}">Aura — {{ p_aura.price | money }}</a>{%- endif -%}
+    {%- if p_spectrum != blank -%}<a href="{{ p_spectrum.url }}">Spectrum — {{ p_spectrum.price | money }}</a>{%- endif -%}
+  </div>
+</nav>
+
+{{ content_for_layout }}
+
+<!-- FOOTER -->
+<footer class="lfoot">
+  <div class="lfoot-inner">
+    <div class="lfoot-brand">
+      <span class="llogo">LUMÈRA</span>
+      <p>Advanced red light therapy for the modern ritual.</p>
+    </div>
+    <div class="lfoot-links">
+      <div class="lfoot-col">
+        <strong>The Collection</strong>
+        {%- if p_prestige != blank -%}<a href="{{ p_prestige.url }}">Prestige — {{ p_prestige.price | money }}</a>{%- endif -%}
+        {%- if p_aura != blank -%}<a href="{{ p_aura.url }}">Aura — {{ p_aura.price | money }}</a>{%- endif -%}
+        {%- if p_spectrum != blank -%}<a href="{{ p_spectrum.url }}">Spectrum — {{ p_spectrum.price | money }}</a>{%- endif -%}
+      </div>
+      <div class="lfoot-col">
+        <strong>Support</strong>
+        <a href="/pages/shipping-policy">Shipping Policy</a>
+        <a href="/pages/refund-policy">Returns &amp; Refunds</a>
+        <a href="mailto:support@lumera.co">support@lumera.co</a>
+      </div>
+      <div class="lfoot-col">
+        <strong>Legal</strong>
+        <a href="/pages/privacy-policy">Privacy Policy</a>
+        <a href="/pages/terms-of-service">Terms of Service</a>
+        <a href="/pages/refund-policy">Refund Policy</a>
+      </div>
+    </div>
+  </div>
+  <div class="lfoot-bottom">
+    <span>© 2026 LUMÈRA. All rights reserved.</span>
+    <span class="lfoot-disclaimer">LUMÈRA LED face masks are consumer wellness devices and are not medical devices. Not intended to diagnose, treat, cure, or prevent any disease. Individual results vary.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var burger = document.getElementById('lburger');
+  var menu = document.getElementById('lmobile-menu');
+  if(burger && menu){
+    burger.addEventListener('click', function(e){ e.stopPropagation(); menu.classList.toggle('open'); });
+    document.addEventListener('click', function(e){ if(!e.target.closest('#lnav')) menu.classList.remove('open'); });
+  }
+  document.querySelectorAll('a[href^="/#"]').forEach(function(a){
+    a.addEventListener('click', function(e){
+      if(window.location.pathname === '/'){
+        var id = a.getAttribute('href').slice(1);
+        var el = document.querySelector(id);
+        if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); menu.classList.remove('open'); }
+      }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

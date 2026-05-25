@@ -1,0 +1,129 @@
+<section class="product-page">
+  <div class="product-breadcrumb">
+    <a href="/">Home</a> <span>/</span> <a href="/collections/all">Collection</a> <span>/</span> <span>{{ product.title }}</span>
+  </div>
+
+  <div class="product-layout">
+    <!-- Gallery -->
+    <div class="product-gallery">
+      <div class="product-gallery__main">
+        {%- assign first_image = product.featured_image -%}
+        <img id="productMainImage" src="{{ first_image | image_url: width: 900 }}" alt="{{ first_image.alt | escape }}" loading="eager">
+      </div>
+      <div class="product-gallery__thumbs">
+        {%- for image in product.images limit: 6 -%}
+          <img src="{{ image | image_url: width: 200 }}"
+               alt="{{ image.alt | escape }}"
+               onclick="document.getElementById('productMainImage').src='{{ image | image_url: width: 900 }}'"
+               class="gallery-thumb{% if forloop.first %} active{% endif %}">
+        {%- endfor -%}
+      </div>
+    </div>
+
+    <!-- Product Info -->
+    <div class="product-info">
+      <p class="product-vendor">{{ product.vendor }}</p>
+      <h1 class="product-title">{{ product.title }}</h1>
+
+      {%- form 'product', product, id: 'product-form' -%}
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+
+        {%- if product.variants.size > 1 -%}
+          {%- for option in product.options_with_values -%}
+            <div class="product-option">
+              <label class="option-label">{{ option.name }}</label>
+              <div class="option-values">
+                {%- for value in option.values -%}
+                  <label class="option-swatch {% if option.selected_value == value %}selected{% endif %}">
+                    <input type="radio" name="options[{{ option.name | handleize }}]" value="{{ value }}" {% if option.selected_value == value %}checked{% endif %}>
+                    <span>{{ value }}</span>
+                  </label>
+                {%- endfor -%}
+              </div>
+            </div>
+          {%- endfor -%}
+        {%- endif -%}
+
+        <div class="product-price-block">
+          <span class="product-price" id="productPrice">{{ product.selected_or_first_available_variant.price | money }}</span>
+          {%- if product.selected_or_first_available_variant.compare_at_price > product.selected_or_first_available_variant.price -%}
+            <span class="product-compare" id="productCompare">{{ product.selected_or_first_available_variant.compare_at_price | money }}</span>
+            <span class="product-badge">SAVE {{ product.selected_or_first_available_variant.compare_at_price | minus: product.selected_or_first_available_variant.price | money }}</span>
+          {%- endif -%}
+        </div>
+
+        <div class="product-trust">
+          <span>✦ Free shipping over $99</span>
+          <span>✦ 30-day returns</span>
+          <span>✦ Secure checkout</span>
+        </div>
+
+        <button type="submit" name="add" class="btn btn-add-to-cart" {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}>
+          {% if product.selected_or_first_available_variant.available %}
+            Add to Ritual — {{ product.selected_or_first_available_variant.price | money }}
+          {% else %}
+            Sold Out
+          {% endif %}
+        </button>
+
+        <a href="/checkout" class="btn btn-buy-now">Buy Now</a>
+
+      {%- endform -%}
+
+      <div class="product-description">
+        {{ product.description }}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.product-page { max-width: 1200px; margin: 0 auto; padding: 60px 24px; }
+.product-breadcrumb { font-family: var(--ff-sans); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #888; margin-bottom: 48px; }
+.product-breadcrumb a { color: #888; text-decoration: none; }
+.product-breadcrumb span { margin: 0 8px; }
+.product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+@media(max-width:768px){ .product-layout { grid-template-columns: 1fr; gap: 40px; } }
+.product-gallery__main img { width: 100%; border-radius: 2px; display: block; }
+.product-gallery__thumbs { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.gallery-thumb { width: 80px; height: 80px; object-fit: cover; cursor: pointer; border-radius: 2px; border: 1px solid transparent; transition: border-color .2s; }
+.gallery-thumb.active, .gallery-thumb:hover { border-color: var(--gold); }
+.product-vendor { font-family: var(--ff-sans); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin: 0 0 12px; }
+.product-title { font-family: var(--ff-serif); font-size: clamp(24px, 3vw, 36px); font-weight: 300; color: #fff; margin: 0 0 32px; line-height: 1.2; }
+.product-option { margin-bottom: 24px; }
+.option-label { font-family: var(--ff-sans); font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
+.option-values { display: flex; gap: 10px; flex-wrap: wrap; }
+.option-swatch input { display: none; }
+.option-swatch span { display: block; padding: 8px 18px; border: 1px solid #333; font-family: var(--ff-sans); font-size: 13px; cursor: pointer; transition: all .2s; color: #ccc; }
+.option-swatch.selected span, .option-swatch:hover span { border-color: var(--gold); color: var(--gold); }
+.product-price-block { display: flex; align-items: baseline; gap: 12px; margin: 24px 0; }
+.product-price { font-family: var(--ff-serif); font-size: 28px; color: #fff; }
+.product-compare { font-family: var(--ff-sans); font-size: 16px; color: #666; text-decoration: line-through; }
+.product-badge { font-family: var(--ff-sans); font-size: 11px; letter-spacing: .1em; background: var(--gold); color: var(--blk); padding: 4px 8px; }
+.product-trust { display: flex; gap: 20px; flex-wrap: wrap; font-family: var(--ff-sans); font-size: 11px; letter-spacing: .08em; color: #888; margin-bottom: 28px; }
+.btn-add-to-cart { display: block; width: 100%; padding: 18px; background: var(--gold); color: var(--blk); font-family: var(--ff-sans); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; border: none; cursor: pointer; margin-bottom: 12px; transition: opacity .2s; }
+.btn-add-to-cart:hover { opacity: .9; }
+.btn-add-to-cart:disabled { background: #333; color: #666; cursor: not-allowed; }
+.btn-buy-now { display: block; width: 100%; padding: 18px; background: transparent; color: var(--gold); font-family: var(--ff-sans); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; border: 1px solid var(--gold); text-decoration: none; text-align: center; margin-bottom: 32px; transition: all .2s; }
+.btn-buy-now:hover { background: var(--gold); color: var(--blk); }
+.product-description { font-family: var(--ff-sans); font-size: 14px; line-height: 1.8; color: #999; border-top: 1px solid #1a1a1a; padding-top: 32px; margin-top: 8px; }
+.product-description h3 { font-family: var(--ff-serif); font-size: 18px; color: #ccc; font-weight: 300; margin: 24px 0 12px; }
+.product-description ul { padding-left: 20px; }
+.product-description li { margin-bottom: 6px; }
+</style>
+
+<script>
+document.querySelectorAll('.option-swatch input').forEach(input => {
+  input.addEventListener('change', function() {
+    this.closest('.option-values').querySelectorAll('.option-swatch').forEach(s => s.classList.remove('selected'));
+    this.closest('.option-swatch').classList.add('selected');
+  });
+});
+</script>
+
+{% schema %}
+{
+  "name": "LUMÈRA Product",
+  "settings": []
+}
+{% endschema %}

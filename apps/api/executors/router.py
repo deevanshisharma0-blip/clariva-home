@@ -57,14 +57,17 @@ async def execute_approval(approval_id: int, db: AsyncSession) -> None:
     exec_result: dict = {}
     try:
         if action_type in SHOPIFY_ACTIONS:
-            if biz.shopify_domain and biz.shopify_token:
-                executor = ShopifyExecutor(biz.shopify_domain, biz.shopify_token)
+            # Use biz credentials if available; fall back to global settings (which auto-reads CLI token)
+            shopify_domain = biz.shopify_domain or settings.shopify_store or "lumera-aura.myshopify.com"
+            shopify_token = biz.shopify_token or settings.shopify_token or ""
+            executor = ShopifyExecutor(shopify_domain, shopify_token)
+            if await executor.verify_token():
                 exec_result = await executor.execute(action_type, payload)
             else:
                 exec_result = {
                     "status": "skipped",
-                    "reason": "Shopify not configured",
-                    "note": "Add Shopify domain and access token in Settings to execute live",
+                    "reason": "Shopify token invalid or not configured",
+                    "note": "Run 'shopify theme push' locally to refresh CLI token, or add Custom App token in Settings",
                 }
 
         elif action_type in CJ_ACTIONS:

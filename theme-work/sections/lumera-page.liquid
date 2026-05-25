@@ -1,0 +1,96 @@
+<section class="lumera-page-section">
+  <div class="lumera-page-inner">
+    <header class="lumera-page-header">
+      <span class="l-eyebrow">LUMÈRA</span>
+      <h1 class="lumera-page-title">{{ page.title }}</h1>
+    </header>
+    <div class="lumera-page-content rte">
+      {{ page.content }}
+    </div>
+  </div>
+</section>
+
+<style>
+.lumera-page-section {
+  background: var(--blk, #050508);
+  min-height: calc(100vh - 68px);
+  padding: 80px 0 120px;
+}
+.lumera-page-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.lumera-page-header {
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid rgba(196,163,90,.15);
+}
+.lumera-page-title {
+  font-family: var(--serif, 'Cormorant Garamond', Georgia, serif);
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 300;
+  line-height: 1.12;
+  letter-spacing: .03em;
+  color: #fff;
+  margin-top: 10px;
+}
+.lumera-page-content {
+  font-family: var(--sans, 'Inter', sans-serif);
+  font-size: 15px;
+  line-height: 1.85;
+  color: rgba(255,255,255,.75);
+}
+.lumera-page-content h2 {
+  font-family: var(--serif, 'Cormorant Garamond', Georgia, serif);
+  font-size: 26px;
+  font-weight: 300;
+  color: #fff;
+  margin: 48px 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(196,163,90,.12);
+}
+.lumera-page-content h3 {
+  font-family: var(--sans, 'Inter', sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold, #C4A35A);
+  margin: 32px 0 10px;
+}
+.lumera-page-content p { margin-bottom: 18px; }
+.lumera-page-content ul,
+.lumera-page-content ol {
+  margin: 16px 0 20px 20px;
+}
+.lumera-page-content li { margin-bottom: 8px; }
+.lumera-page-content strong {
+  color: #fff;
+  font-weight: 600;
+}
+.lumera-page-content a {
+  color: var(--gold, #C4A35A);
+  border-bottom: 1px solid rgba(196,163,90,.3);
+  transition: border-color .2s;
+}
+.lumera-page-content a:hover {
+  border-color: var(--gold, #C4A35A);
+}
+.lumera-page-content hr {
+  border: none;
+  border-top: 1px solid rgba(196,163,90,.15);
+  margin: 40px 0;
+}
+@media (max-width: 640px) {
+  .lumera-page-inner { padding: 0 20px; }
+  .lumera-page-section { padding: 48px 0 80px; }
+}
+</style>
+
+{% schema %}
+{
+  "name": "Page Content",
+  "settings": []
+}
+{% endschema %}

@@ -129,30 +129,39 @@ async def test_ionos_email(business_id: int, db: AsyncSession = Depends(get_db))
 
 @router.get("/{business_id}/test-shopify")
 async def test_shopify(business_id: int, db: AsyncSession = Depends(get_db)):
+    from ..executors.shopify import ShopifyExecutor, _read_cli_token
     result = await db.execute(select(Business).where(Business.id == business_id))
     biz = result.scalar_one_or_none()
     if not biz:
         raise HTTPException(404, "Business not found")
-    if not biz.shopify_domain or not biz.shopify_token:
-        return {"ok": False, "error": "Shopify credentials not configured. Add your store domain and access token above."}
+    # Use biz credentials, fall back to global settings, then CLI token
+    domain = biz.shopify_domain or settings.shopify_store or "lumera-aura.myshopify.com"
+    token = biz.shopify_token or settings.shopify_token or _read_cli_token()
+    if not token:
+        return {
+            "ok": False,
+            "error": "No Shopify token available. Run 'shopify theme push' locally to refresh, "
+                     "or add a Custom App access token in Settings."
+        }
     try:
-        url = f"https://{biz.shopify_domain}/admin/api/{SHOPIFY_API_VERSION}/shop.json"
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(url, headers={"X-Shopify-Access-Token": biz.shopify_token})
-        if resp.status_code == 200:
-            shop = resp.json()["shop"]
-            return {"ok": True, "shop_name": shop["name"], "domain": shop["domain"], "plan": shop.get("plan_name")}
-        elif resp.status_code == 401:
+        executor = ShopifyExecutor(domain, token)
+        ok = await executor.verify_token()
+        if ok:
+            data = await executor._gql("{shop{name myshopifyDomain plan{displayName}}}")
+            shop = data.get("shop", {})
+            return {
+                "ok": True,
+                "shop_name": shop.get("name", ""),
+                "domain": shop.get("myshopifyDomain", ""),
+                "plan": shop.get("plan", {}).get("displayName", ""),
+                "auth_mode": "bearer" if executor._use_bearer else "custom_app"
+            }
+        else:
             return {
                 "ok": False,
-                "error": "Invalid access token (401). Your token may have been revoked or not installed. "
-                         "Go to: Shopify Admin → Apps → App and sales channel settings → Develop apps → "
-                         "your NexusOS app → API credentials → 'Rotate API credentials' to get a fresh token."
+                "error": "Token invalid or expired. Run 'shopify theme push' locally to refresh the CLI token, "
+                         "or create a Custom App at: Shopify Admin → Settings → Apps → Develop apps."
             }
-        elif resp.status_code == 404:
-            return {"ok": False, "error": "Store domain not found. Check your .myshopify.com domain."}
-        else:
-            return {"ok": False, "error": f"Shopify returned {resp.status_code}"}
     except httpx.TimeoutException:
         return {"ok": False, "error": "Connection timed out. Check your store domain."}
     except Exception as e:

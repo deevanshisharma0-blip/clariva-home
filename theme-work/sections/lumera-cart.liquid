@@ -1,0 +1,81 @@
+<section class="cart-page">
+  <h1 class="cart-title">Your Ritual</h1>
+
+  {%- if cart.item_count > 0 -%}
+    <form action="/cart" method="post">
+      <div class="cart-layout">
+        <div class="cart-items">
+          {%- for item in cart.items -%}
+            <div class="cart-item">
+              <a href="{{ item.url }}">
+                <img src="{{ item.image | image_url: width: 160 }}" alt="{{ item.title | escape }}" class="cart-item__img">
+              </a>
+              <div class="cart-item__info">
+                <p class="cart-item__vendor">{{ item.vendor }}</p>
+                <a href="{{ item.url }}" class="cart-item__title">{{ item.product_title }}</a>
+                {%- unless item.variant_title == 'Default Title' -%}
+                  <p class="cart-item__variant">{{ item.variant_title }}</p>
+                {%- endunless -%}
+                <div class="cart-item__qty">
+                  <a href="/cart/change?line={{ forloop.index }}&quantity={{ item.quantity | minus: 1 }}" class="qty-btn">−</a>
+                  <span>{{ item.quantity }}</span>
+                  <a href="/cart/change?line={{ forloop.index }}&quantity={{ item.quantity | plus: 1 }}" class="qty-btn">+</a>
+                </div>
+                <a href="/cart/change?line={{ forloop.index }}&quantity=0" class="cart-item__remove">Remove</a>
+              </div>
+              <span class="cart-item__price">{{ item.final_line_price | money }}</span>
+            </div>
+          {%- endfor -%}
+        </div>
+
+        <div class="cart-summary">
+          <div class="cart-subtotal">
+            <span>Subtotal</span>
+            <span>{{ cart.total_price | money }}</span>
+          </div>
+          <p class="cart-note">Shipping and taxes calculated at checkout.</p>
+          <button type="submit" name="checkout" class="btn btn-checkout">Proceed to Checkout</button>
+          <a href="/collections/all" class="btn btn-continue">Continue Shopping</a>
+        </div>
+      </div>
+    </form>
+  {%- else -%}
+    <div class="cart-empty">
+      <p>Your cart is empty.</p>
+      <a href="/collections/all" class="btn btn-checkout">Discover the Collection</a>
+    </div>
+  {%- endif -%}
+</section>
+
+<style>
+.cart-page { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.cart-title { font-family: var(--ff-serif); font-size: clamp(28px,4vw,48px); font-weight: 300; color: #fff; margin-bottom: 60px; letter-spacing: .04em; }
+.cart-layout { display: grid; grid-template-columns: 1fr 360px; gap: 60px; align-items: start; }
+@media(max-width:768px){ .cart-layout { grid-template-columns: 1fr; } }
+.cart-item { display: flex; gap: 24px; align-items: flex-start; padding: 28px 0; border-bottom: 1px solid #1a1a1a; }
+.cart-item__img { width: 100px; height: 100px; object-fit: cover; border-radius: 2px; flex-shrink: 0; }
+.cart-item__info { flex: 1; }
+.cart-item__vendor { font-family: var(--ff-sans); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+.cart-item__title { font-family: var(--ff-serif); font-size: 18px; color: #fff; text-decoration: none; font-weight: 300; }
+.cart-item__variant { font-family: var(--ff-sans); font-size: 12px; color: #777; margin: 4px 0; }
+.cart-item__qty { display: flex; align-items: center; gap: 16px; margin: 12px 0; font-family: var(--ff-sans); font-size: 14px; color: #ccc; }
+.qty-btn { color: var(--gold); text-decoration: none; font-size: 18px; line-height: 1; }
+.cart-item__remove { font-family: var(--ff-sans); font-size: 11px; letter-spacing: .1em; color: #555; text-decoration: none; text-transform: uppercase; }
+.cart-item__remove:hover { color: #888; }
+.cart-item__price { font-family: var(--ff-serif); font-size: 20px; color: #fff; white-space: nowrap; }
+.cart-summary { background: #0d0d0d; border: 1px solid #1a1a1a; padding: 32px; position: sticky; top: 100px; }
+.cart-subtotal { display: flex; justify-content: space-between; font-family: var(--ff-serif); font-size: 20px; color: #fff; margin-bottom: 12px; }
+.cart-note { font-family: var(--ff-sans); font-size: 12px; color: #666; margin-bottom: 24px; }
+.btn-checkout { display: block; width: 100%; padding: 18px; background: var(--gold); color: var(--blk); font-family: var(--ff-sans); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; border: none; cursor: pointer; margin-bottom: 12px; text-align: center; text-decoration: none; }
+.btn-checkout:hover { opacity: .9; }
+.btn-continue { display: block; width: 100%; padding: 16px; text-align: center; font-family: var(--ff-sans); font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: #777; text-decoration: none; }
+.cart-empty { text-align: center; padding: 80px 0; }
+.cart-empty p { font-family: var(--ff-sans); color: #666; margin-bottom: 32px; }
+</style>
+
+{% schema %}
+{
+  "name": "LUMÈRA Cart",
+  "settings": []
+}
+{% endschema %}

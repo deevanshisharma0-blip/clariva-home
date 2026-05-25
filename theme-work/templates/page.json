@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "lumera-page",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}
