@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,6 +10,7 @@ from ..models import Agent, Task, Business
 from ..agents.orchestrator import run_agent_task
 from .ws import broadcast
 
+log = logging.getLogger(__name__)
 router = APIRouter(prefix="/agents", tags=["agents"])
 
 
@@ -259,8 +261,8 @@ async def chat_with_agent(
                 resp.raise_for_status()
                 return resp.json().get("message", {}).get("content", "")
 
-        # Try preferred model (gemma4), then fallback candidates
-        fallback_models = [cfg.ollama_model, "llama3.2:latest", "llama3.2:1b", "llama3:latest"]
+        # Try preferred model (gemma3:4b), then fallback candidates
+        fallback_models = [cfg.ollama_model, "gemma3:4b", "llama3.2:latest", "llama3.2:1b"]
         seen: set[str] = set()
         for model in fallback_models:
             if model in seen:
