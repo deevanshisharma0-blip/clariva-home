@@ -71,6 +71,8 @@ export default function AITaskHub({ bizId, onNav }: { bizId: number; onNav: (s: 
   const [doneAgents,   setDoneAgents]   = useState<Set<string>>(new Set());
   const [briefRefresh, setBriefRefresh] = useState(false);
   const [deciding,     setDeciding]     = useState<number | null>(null);
+  const [approvingAll, setApprovingAll] = useState(false);
+  const [autopilot,    setAutopilot]    = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
   const loadHub = useCallback(() => {
@@ -143,6 +145,44 @@ export default function AITaskHub({ bizId, onNav }: { bizId: number; onNav: (s: 
     setDeciding(null);
   };
 
+  const approveAll = async () => {
+    const pending = data?.pending_approvals ?? [];
+    if (pending.length === 0) return;
+    setApprovingAll(true);
+    for (const a of pending) {
+      await api.approvals.decide(a.id, "approved");
+    }
+    await loadHub();
+    await loadFlow();
+    setApprovingAll(false);
+  };
+
+  const runAutopilot = async () => {
+    setAutopilot(true);
+    setFlowRunning(true);
+    setFlowDone(false);
+    setDoneAgents(new Set());
+    await api.flow.run(bizId);
+    // Poll until flow finishes, then approve all
+    const poll = setInterval(async () => {
+      const s = await api.flow.status(bizId) as FlowStatus;
+      if (!s.is_running) {
+        clearInterval(poll);
+        setFlowRunning(false);
+        setFlowDone(true);
+        await loadHub();
+        // Auto-approve everything the agents created
+        const d = await api.tasks.get(bizId) as TaskHubData;
+        for (const a of d.pending_approvals ?? []) {
+          await api.approvals.decide(a.id, "approved");
+        }
+        await loadHub();
+        await loadFlow();
+        setAutopilot(false);
+      }
+    }, 6000);
+  };
+
   const pendingItems = flowStatus?.pending_items ?? [];
   const hubApprovals = data?.pending_approvals ?? [];
 
@@ -150,26 +190,46 @@ export default function AITaskHub({ bizId, onNav }: { bizId: number; onNav: (s: 
     <div className="space-y-5 animate-fade-in">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-text-primary">{greeting()} 👋</h1>
           <p className="text-sm text-muted mt-0.5">AI is watching your business — here's everything that needs you</p>
         </div>
-        <button
-          onClick={runFlow}
-          disabled={flowRunning}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all",
-            flowRunning
-              ? "bg-primary-dim text-primary-light cursor-not-allowed"
-              : flowDone
-              ? "bg-success-dim text-success border border-success/30"
-              : "bg-primary text-white hover:bg-primary-light shadow-lg shadow-primary/20"
-          )}
-        >
-          {flowRunning ? <Loader2 size={15} className="animate-spin" /> : flowDone ? <CheckCircle size={15} /> : <Play size={15} />}
-          {flowRunning ? "AI Analyzing…" : flowDone ? "Analysis Complete" : "Run AI Analysis"}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Run All Agents */}
+          <button
+            onClick={runFlow}
+            disabled={flowRunning || autopilot}
+            title="Run all 7 AI agents — they'll analyse your business and create tasks"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all",
+              flowRunning || autopilot
+                ? "bg-primary-dim text-primary-light cursor-not-allowed"
+                : flowDone
+                ? "bg-success-dim text-success border border-success/30"
+                : "bg-surface border border-border text-text-primary hover:border-primary/40 hover:text-primary-light"
+            )}
+          >
+            {flowRunning && !autopilot ? <Loader2 size={15} className="animate-spin" /> : flowDone && !autopilot ? <CheckCircle size={15} /> : <Play size={15} />}
+            {flowRunning && !autopilot ? "Analyzing…" : flowDone && !autopilot ? "Done" : "Run Agents"}
+          </button>
+
+          {/* Full Autopilot — run agents + approve all */}
+          <button
+            onClick={runAutopilot}
+            disabled={flowRunning || autopilot}
+            title="Run all agents AND auto-approve every task they create"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all",
+              autopilot
+                ? "bg-primary-dim text-primary-light cursor-not-allowed animate-pulse"
+                : "bg-primary text-white hover:bg-primary-light shadow-lg shadow-primary/25"
+            )}
+          >
+            {autopilot ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
+            {autopilot ? "Autopilot Running…" : "⚡ Full Autopilot"}
+          </button>
+        </div>
       </div>
 
       {/* Flow pipeline — agent-by-agent progress */}
@@ -234,10 +294,22 @@ export default function AITaskHub({ bizId, onNav }: { bizId: number; onNav: (s: 
                 </span>
               )}
             </div>
-            <button onClick={() => onNav("approvals")}
-              className="flex items-center gap-1 text-[10px] text-muted hover:text-primary-light transition-colors">
-              All approvals <ChevronRight size={11} />
-            </button>
+            <div className="flex items-center gap-2">
+              {hubApprovals.length > 1 && (
+                <button
+                  onClick={approveAll}
+                  disabled={approvingAll}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-success text-white text-[10px] font-bold hover:bg-success/90 transition-colors disabled:opacity-50"
+                >
+                  {approvingAll ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle size={10} />}
+                  {approvingAll ? "Approving…" : `Approve All (${hubApprovals.length})`}
+                </button>
+              )}
+              <button onClick={() => onNav("approvals")}
+                className="flex items-center gap-1 text-[10px] text-muted hover:text-primary-light transition-colors">
+                All approvals <ChevronRight size={11} />
+              </button>
+            </div>
           </div>
           <div className="divide-y divide-border/50 max-h-80 overflow-y-auto">
             {hubApprovals.length === 0 ? (
