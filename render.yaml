@@ -18,5 +18,11 @@ services:
         sync: false
       - key: IONOS_DIGEST_RECIPIENT
         value: info.vereine@gmail.com
+      - key: CJ_API_EMAIL
+        value: info.vereine@gmail.com
+      - key: CJ_API_KEY
+        value: 224aab94934745f586e7db486f377741
+      - key: OLLAMA_URL
+        value: ""
       - key: DEBUG
         value: "false"
