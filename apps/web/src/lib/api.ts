@@ -41,6 +41,8 @@ export const api = {
       }),
     create: (data: Record<string, unknown>) =>
       req("/api/approvals/", { method: "POST", body: JSON.stringify(data) }),
+    recall: (id: number) =>
+      req(`/api/approvals/${id}/recall`, { method: "POST" }),
   },
 
   analytics: {

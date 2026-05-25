@@ -161,6 +161,33 @@ async def _send_approval_email(approval: Approval, biz_name: str) -> None:
         pass
 
 
+@router.post("/{approval_id}/recall", response_model=ApprovalOut)
+async def recall_approval(approval_id: int, db: AsyncSession = Depends(get_db)):
+    """Recall an approved or declined decision — resets it back to pending."""
+    result = await db.execute(select(Approval).where(Approval.id == approval_id))
+    approval = result.scalar_one_or_none()
+    if not approval:
+        raise HTTPException(404, "Approval not found")
+    if approval.status == "pending":
+        raise HTTPException(400, "Approval is already pending")
+
+    approval.status = "pending"
+    approval.decision_note = None
+    approval.decided_at = None
+    approval.execution_status = None
+    approval.execution_result = None
+    approval.executed_at = None
+    await db.commit()
+    await db.refresh(approval)
+
+    await broadcast({
+        "event": "approval.recalled",
+        "approval_id": approval_id,
+        "title": approval.title,
+    })
+    return approval
+
+
 @router.get("/item/{approval_id}", response_model=ApprovalOut)
 async def get_approval(approval_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Approval).where(Approval.id == approval_id))

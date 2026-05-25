@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Shield, Zap, DollarSign, TrendingUp, Clock, ExternalLink } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Shield, Zap, DollarSign, TrendingUp, Clock, ExternalLink, Undo2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Approval } from "@/lib/types";
 import { cn, timeAgo, RISK_COLORS } from "@/lib/utils";
@@ -62,11 +62,19 @@ function ExecutionResult({ approval }: { approval: Approval }) {
   );
 }
 
-function ApprovalCard({ approval, onDecide }: { approval: Approval; onDecide: (id: number, decision: string, note?: string) => void }) {
+function ApprovalCard({ approval, onDecide, onRecall }: {
+  approval: Approval;
+  onDecide: (id: number, decision: string, note?: string) => void;
+  onRecall: (id: number) => void;
+}) {
   const [deciding, setDeciding] = useState(false);
+  const [recalling, setRecalling] = useState(false);
   const [note, setNote] = useState("");
   const [showNote, setShowNote] = useState(false);
   const isPending = approval.status === "pending";
+  const isApproved = approval.status === "approved";
+  const isDeclined = approval.status === "declined";
+  const canRecall = (isApproved || isDeclined) && approval.execution_status !== "success";
   const Icon = ACTION_ICONS[approval.action_type] ?? Shield;
 
   const decide = async (decision: string) => {
@@ -74,6 +82,12 @@ function ApprovalCard({ approval, onDecide }: { approval: Approval; onDecide: (i
     await onDecide(approval.id, decision, note || undefined);
     setDeciding(false);
     setShowNote(false);
+  };
+
+  const recall = async () => {
+    setRecalling(true);
+    await onRecall(approval.id);
+    setRecalling(false);
   };
 
   return (
@@ -141,7 +155,7 @@ function ApprovalCard({ approval, onDecide }: { approval: Approval; onDecide: (i
           {/* Execution result */}
           <ExecutionResult approval={approval} />
 
-          {/* Action buttons */}
+          {/* Action buttons — pending */}
           {isPending && (
             <div className="mt-4 space-y-2">
               {showNote && (
@@ -153,29 +167,46 @@ function ApprovalCard({ approval, onDecide }: { approval: Approval; onDecide: (i
                 />
               )}
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => decide("approved")}
-                  disabled={deciding}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success text-white text-xs font-semibold hover:bg-success/90 transition-colors disabled:opacity-50"
-                >
+                <button onClick={() => decide("approved")} disabled={deciding}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success text-white text-xs font-semibold hover:bg-success/90 transition-colors disabled:opacity-50">
                   <CheckCircle size={12} /> APPROVE
                 </button>
-                <button
-                  onClick={() => decide("declined")}
-                  disabled={deciding}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-danger text-white text-xs font-semibold hover:bg-danger/90 transition-colors disabled:opacity-50"
-                >
+                <button onClick={() => decide("declined")} disabled={deciding}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-danger text-white text-xs font-semibold hover:bg-danger/90 transition-colors disabled:opacity-50">
                   <XCircle size={12} /> DECLINE
                 </button>
-                <button
-                  onClick={() => { setShowNote(!showNote); if (showNote && note) decide("revision"); }}
-                  disabled={deciding}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warning-dim text-warning text-xs font-semibold hover:bg-warning/20 transition-colors disabled:opacity-50"
-                >
+                <button onClick={() => { setShowNote(!showNote); if (showNote && note) decide("revision"); }} disabled={deciding}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warning-dim text-warning text-xs font-semibold hover:bg-warning/20 transition-colors disabled:opacity-50">
                   <RefreshCw size={12} /> REVISION
                 </button>
                 {deciding && <RefreshCw size={13} className="text-muted animate-spin" />}
               </div>
+            </div>
+          )}
+
+          {/* Recall button — for approved or declined (not yet executed) */}
+          {canRecall && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <button
+                onClick={recall}
+                disabled={recalling}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-border text-muted text-xs font-semibold hover:border-warning/40 hover:text-warning transition-all disabled:opacity-50"
+              >
+                {recalling
+                  ? <RefreshCw size={12} className="animate-spin" />
+                  : <Undo2 size={12} />}
+                {recalling ? "Recalling…" : "Recall Decision"}
+              </button>
+              <p className="text-[10px] text-muted mt-1">Resets to pending so you can re-decide</p>
+            </div>
+          )}
+
+          {/* Already executed — can't recall */}
+          {(isApproved || isDeclined) && approval.execution_status === "success" && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <p className="text-[10px] text-muted flex items-center gap-1">
+                <CheckCircle size={10} className="text-success" /> Already executed — cannot recall
+              </p>
             </div>
           )}
         </div>
@@ -204,6 +235,11 @@ export default function ApprovalCenter({ bizId }: { bizId: number }) {
 
   const handleDecide = async (id: number, decision: string, note?: string) => {
     await api.approvals.decide(id, decision, note);
+    load();
+  };
+
+  const handleRecall = async (id: number) => {
+    await api.approvals.recall(id);
     load();
   };
 
@@ -246,7 +282,7 @@ export default function ApprovalCenter({ bizId }: { bizId: number }) {
             <p className="text-sm">No {filter === "all" ? "" : filter} approvals</p>
           </div>
         ) : (
-          filtered.map((a) => <ApprovalCard key={a.id} approval={a} onDecide={handleDecide} />)
+          filtered.map((a) => <ApprovalCard key={a.id} approval={a} onDecide={handleDecide} onRecall={handleRecall} />)
         )}
       </div>
     </div>
