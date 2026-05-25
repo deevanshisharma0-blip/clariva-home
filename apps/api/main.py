@@ -10,6 +10,7 @@ from .config import settings
 from .database import init_db
 from .routers import agents, approvals, analytics, businesses, products, creative, ws, marketing, finance, workflows, observability, tasks, flow
 from .routers import settings as settings_router
+from .routers.orders import router as orders_router, webhook_router
 from .services.seed import seed_demo_data
 from .services.scheduler import start as start_scheduler, stop as stop_scheduler
 
@@ -59,6 +60,8 @@ app.include_router(observability.router, prefix="/api")
 app.include_router(settings_router.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
 app.include_router(flow.router, prefix="/api")
+app.include_router(orders_router, prefix="/api")
+app.include_router(webhook_router, prefix="/api")
 
 
 @app.get("/api/status")

@@ -138,6 +138,32 @@ class Event(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class Order(Base):
+    """Tracks Shopify orders and their CJ fulfillment status."""
+    __tablename__ = "orders"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id"))
+    shopify_order_id: Mapped[str] = mapped_column(String(100), unique=True)
+    shopify_order_number: Mapped[Optional[str]] = mapped_column(String(50))
+    customer_name: Mapped[Optional[str]] = mapped_column(String(200))
+    customer_email: Mapped[Optional[str]] = mapped_column(String(200))
+    shipping_country: Mapped[Optional[str]] = mapped_column(String(10))
+    total_price: Mapped[float] = mapped_column(Float, default=0)
+    currency: Mapped[str] = mapped_column(String(10), default="CAD")
+    line_items: Mapped[Optional[dict]] = mapped_column(JSON)
+    # CJ fulfillment
+    cj_order_id: Mapped[Optional[str]] = mapped_column(String(200))
+    cj_tracking_number: Mapped[Optional[str]] = mapped_column(String(200))
+    cj_status: Mapped[Optional[str]] = mapped_column(String(50))  # pending/submitted/shipped/delivered/failed
+    fulfillment_status: Mapped[str] = mapped_column(String(50), default="pending")
+    # Timestamps
+    shopify_created_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    cj_submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    shipped_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    raw: Mapped[Optional[dict]] = mapped_column(JSON)  # full Shopify payload
+
+
 class Creative(Base):
     __tablename__ = "creatives"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
