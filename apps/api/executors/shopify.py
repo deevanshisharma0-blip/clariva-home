@@ -1,9 +1,11 @@
 """Shopify Admin REST API executor. Never deletes products, orders, customers, or themes."""
 import httpx
 
+SHOPIFY_API_VERSION = "2025-04"
+
 
 class ShopifyExecutor:
-    API_VERSION = "2024-10"
+    API_VERSION = SHOPIFY_API_VERSION
 
     def __init__(self, domain: str, token: str):
         self._domain = domain.rstrip("/")
@@ -12,6 +14,15 @@ class ShopifyExecutor:
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json",
         }
+
+    async def verify_token(self) -> bool:
+        """Quick token check — returns True if token is valid."""
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                resp = await client.get(f"{self._base}/shop.json", headers=self._headers)
+                return resp.status_code == 200
+        except Exception:
+            return False
 
     async def execute(self, action_type: str, payload: dict) -> dict:
         try:

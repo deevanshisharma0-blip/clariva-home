@@ -8,7 +8,7 @@ from ..database import get_db
 from ..models import Business
 from ..config import settings as app_settings
 
-SHOPIFY_API_VERSION = "2024-10"
+SHOPIFY_API_VERSION = "2025-04"
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -143,7 +143,12 @@ async def test_shopify(business_id: int, db: AsyncSession = Depends(get_db)):
             shop = resp.json()["shop"]
             return {"ok": True, "shop_name": shop["name"], "domain": shop["domain"], "plan": shop.get("plan_name")}
         elif resp.status_code == 401:
-            return {"ok": False, "error": "Invalid access token. Check your Admin API token in Shopify."}
+            return {
+                "ok": False,
+                "error": "Invalid access token (401). Your token may have been revoked or not installed. "
+                         "Go to: Shopify Admin → Apps → App and sales channel settings → Develop apps → "
+                         "your NexusOS app → API credentials → 'Rotate API credentials' to get a fresh token."
+            }
         elif resp.status_code == 404:
             return {"ok": False, "error": "Store domain not found. Check your .myshopify.com domain."}
         else:
