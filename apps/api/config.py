@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     cj_api_key: str = ""
     openrouter_api_key: str = ""
     ollama_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.2:1b"
+    ollama_model: str = "gemma4"  # gemma4 preferred; falls back to llama3.2:1b if not installed
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # Supabase

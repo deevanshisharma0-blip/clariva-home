@@ -247,23 +247,32 @@ async def chat_with_agent(
         except Exception as e:
             log.warning("Claude chat failed: %s", e)
 
-    # Fall back to Ollama
+    # Fall back to Ollama — try preferred model, then fall back to any installed model
     if not reply and cfg.ollama_url:
-        try:
+        async def _ollama_chat(model: str) -> str:
             ollama_messages = [{"role": "system", "content": system_prompt}] + messages
-            async with _httpx.AsyncClient(timeout=30) as client:
+            async with _httpx.AsyncClient(timeout=60) as client:
                 resp = await client.post(
                     f"{cfg.ollama_url}/api/chat",
-                    json={
-                        "model": cfg.ollama_model,
-                        "messages": ollama_messages,
-                        "stream": False,
-                    }
+                    json={"model": model, "messages": ollama_messages, "stream": False},
                 )
                 resp.raise_for_status()
-                reply = resp.json().get("message", {}).get("content", "")
-        except Exception as e:
-            log.warning("Ollama chat failed: %s", e)
+                return resp.json().get("message", {}).get("content", "")
+
+        # Try preferred model (gemma4), then fallback candidates
+        fallback_models = [cfg.ollama_model, "llama3.2:latest", "llama3.2:1b", "llama3:latest"]
+        seen: set[str] = set()
+        for model in fallback_models:
+            if model in seen:
+                continue
+            seen.add(model)
+            try:
+                reply = await _ollama_chat(model)
+                if reply:
+                    log.info("Ollama chat success with model=%s", model)
+                    break
+            except Exception as e:
+                log.warning("Ollama chat failed with model=%s: %s", model, e)
 
     if not reply:
         reply = (
