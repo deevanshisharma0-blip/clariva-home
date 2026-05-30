@@ -3,7 +3,7 @@ services:
     name: clariva-n8n
     runtime: image
     image:
-      url: docker.n8n.io/n8nio/n8n
+      url: n8nio/n8n
     plan: free
     healthCheckPath: /healthz
     envVars:
