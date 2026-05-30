@@ -1,32 +1,43 @@
 services:
   - type: web
-    name: nexusos
-    runtime: docker
-    dockerfilePath: ./Dockerfile
+    name: clariva-n8n
+    runtime: image
+    image:
+      url: docker.n8n.io/n8nio/n8n
     plan: free
-    healthCheckPath: /api/status
+    healthCheckPath: /healthz
     envVars:
-      - key: DATABASE_URL
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: "true"
+      - key: N8N_BASIC_AUTH_USER
+        value: admin
+      - key: N8N_BASIC_AUTH_PASSWORD
         sync: false
+      - key: N8N_ENCRYPTION_KEY
+        sync: false
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        value: db.qjclbnbzntdxfjuomdwr.supabase.co
+      - key: DB_POSTGRESDB_PORT
+        value: "5432"
+      - key: DB_POSTGRESDB_DATABASE
+        value: postgres
+      - key: DB_POSTGRESDB_USER
+        value: postgres.qjclbnbzntdxfjuomdwr
+      - key: DB_POSTGRESDB_PASSWORD
+        sync: false
+      - key: DB_POSTGRESDB_SCHEMA
+        value: n8n
+      - key: N8N_PROTOCOL
+        value: https
+      - key: N8N_PORT
+        value: "5678"
+      - key: EXECUTIONS_PROCESS
+        value: main
+      - key: GENERIC_TIMEZONE
+        value: America/Toronto
       - key: SUPABASE_URL
         value: https://qjclbnbzntdxfjuomdwr.supabase.co
-      - key: SUPABASE_ANON_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqY2xibmJ6bnRkeGZqdW9tZHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1ODAyNTcsImV4cCI6MjA5NTE1NjI1N30.kmPTOK58FM-SFHVV8qdKLUt_6u4ejK38oTErblidf_4
-      - key: SLACK_WEBHOOK_ALERTS
+      - key: SUPABASE_SERVICE_KEY
         sync: false
-      - key: SLACK_WEBHOOK_BRIEFING
-        sync: false
-      - key: IONOS_DIGEST_RECIPIENT
-        value: info.vereine@gmail.com
-      - key: CJ_API_EMAIL
-        value: info.vereine@gmail.com
-      - key: CJ_API_KEY
-        value: 224aab94934745f586e7db486f377741
-      - key: OLLAMA_URL
-        value: ""
-      - key: SHOPIFY_STORE
-        value: lumera-aura.myshopify.com
-      - key: SHOPIFY_TOKEN
-        sync: false
-      - key: DEBUG
-        value: "false"
