@@ -1,2 +1,6 @@
 FROM n8nio/n8n
-CMD ["sh", "-c", "export N8N_PORT=${PORT:-5678} && n8n start"]
+USER root
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+USER node
+ENTRYPOINT ["/bin/sh", "/start.sh"]
