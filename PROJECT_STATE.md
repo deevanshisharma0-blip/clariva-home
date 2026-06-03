@@ -1,6 +1,6 @@
 # PROJECT_STATE.md — Clariva Home
 **Last updated:** 2026-06-02
-**Spec:** TECHNICAL BUILD SPECIFICATION v1.0 (27 sections)
+**Spec:** TECHNICAL BUILD SPECIFICATION v2.0 (29 sections + §28-29 business viability)
 
 ---
 
@@ -41,7 +41,7 @@
 | Phase | Description | Status |
 |---|---|---|
 | 0 | Toolchain bootstrap | ✅ Complete |
-| 1 | Supabase schema + RLS + pgvector + Realtime + Auth/MFA | ✅ Schema done / ⚠️ Auth/MFA pending |
+| 1 | Supabase schema + RLS + pgvector + Realtime + Auth/MFA | ✅ Schema done / ✅ Auth/MFA complete |
 | 2 | n8n engine + keep-alive + UptimeRobot | ✅ n8n live / ⚠️ needs Postgres backing |
 | 3 | Platform integrations | ✅ OpenAI, Shopify, CJ keys stored |
 | 4 | Agents (Research → CEO + Watchdog) | ❌ Not started |
@@ -53,8 +53,12 @@
 ---
 
 ## Database Schema (Phase 1)
-**Migration:** `phase1_part1_extensions_enums_tables` + `phase1_part2_indexes_triggers_guards` + `phase1_part3_rls_realtime`
-**Applied:** 2026-06-02
+**Migrations applied:**
+- `phase1_part1_extensions_enums_tables` — Applied: 2026-06-02
+- `phase1_part2_indexes_triggers_guards` — Applied: 2026-06-02
+- `phase1_part3_rls_realtime` — Applied: 2026-06-02
+- `phase1_part4_aal2_enforcement` — Applied: 2026-06-02
+- `phase1_part5_s28_business_viability` — Applied: 2026-06-02 | §28 business viability: 5 new tables, product validation extension, 3 DB functions
 
 ### Tables (12)
 | Table | Layer | Reads | Writes | Triggers |
@@ -95,6 +99,35 @@
 
 ---
 
+## §28 Business Viability Schema
+
+### New Tables (§28)
+| Table | Purpose | RLS | Realtime |
+|---|---|---|---|
+| `cash_flow_state` | Rolling cash reserve, 7d/30d projections, reserve coverage ratio | ✅ | ✅ |
+| `unit_economics_daily` | CAC, AOV, contribution margin, LTV, payback period, blended ROAS, scaling_eligible | ✅ | ❌ |
+| `competitor_intelligence` | Competitor pricing/saturation/ad monitoring per product | ✅ | ❌ |
+| `business_health_scores` | GREEN/YELLOW/RED health scoring; RED auto-disables scaling | ✅ | ✅ |
+| `system_pause_state` | Per-pause-reason active flags; operator-only resolution | ✅ | ✅ |
+
+### Products Extensions (§28.3)
+- validation_stage1, validation_stage2, validation_stage3 jsonb columns
+- validation_passed GENERATED ALWAYS AS (all 9 sub-checks pass) STORED
+- enforce_product_validation_gate trigger: blocks candidate→approved if validation_passed IS NOT TRUE
+
+### DB Functions (§28.10)
+- can_scale() → boolean — returns true only if scaling_eligible + cash not blocked + health GREEN + no active pauses
+- current_health_color() → health_color — latest color from business_health_scores
+- trigger_pause_if_needed(type, value, threshold) — upserts system_pause_state row
+
+### Invariants enforced
+- §28.1: cash_flow_state.scaling_blocked blocks can_scale() regardless of other conditions
+- §28.5: each pause_reason type has exactly one row in system_pause_state (UNIQUE constraint)
+- §28.9: RED health auto-triggers scaling pause via trigger on business_health_scores INSERT
+- §28.10: can_scale() is the single gate function; no agent may bypass it
+
+---
+
 ## Installed Skills (skills.sh)
 | Skill | Source | License | Installed | Purpose |
 |---|---|---|---|---|
@@ -108,9 +141,10 @@
 
 ## Open Issues
 1. **n8n Postgres backing** — n8n currently uses SQLite (ephemeral). Must be migrated to Supabase Postgres before agents are built. Render env vars require manual update (auto-mode blocks API write).
-2. **Auth/MFA** — Supabase Auth email+password + TOTP AAL2 not yet configured (Phase 1 remaining item).
+2. **~~Auth/MFA~~** — ✅ Complete. phase1_part4_aal2_enforcement applied; Supabase Auth email+password + TOTP AAL2 enforced at DB level.
 3. **Telegram bot** — TELEGRAM_BOT_TOKEN not yet obtained.
 4. **UptimeRobot** — account created, monitor not yet configured.
+5. **Docker Desktop not installed** — required before Phase 2 (n8n). Install from https://docs.docker.com/desktop/setup/install/windows-install/
 
 ---
 
