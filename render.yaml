@@ -23,7 +23,7 @@ services:
       - key: EXECUTIONS_PROCESS
         value: main
       - key: GENERIC_TIMEZONE
-        value: America/Toronto
+        value: America/Vancouver
       # Postgres backing — Neon free tier (n8n internal tables)
       - key: DB_TYPE
         value: postgresdb
