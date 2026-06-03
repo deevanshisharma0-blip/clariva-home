@@ -6,6 +6,7 @@ services:
     plan: free
     healthCheckPath: /healthz
     envVars:
+      # n8n auth
       - key: N8N_BASIC_AUTH_ACTIVE
         value: "true"
       - key: N8N_BASIC_AUTH_USER
@@ -14,28 +15,35 @@ services:
         sync: false
       - key: N8N_ENCRYPTION_KEY
         sync: false
-      - key: DB_TYPE
-        value: postgresdb
-      - key: DB_POSTGRESDB_HOST
-        value: db.qjclbnbzntdxfjuomdwr.supabase.co
-      - key: DB_POSTGRESDB_PORT
-        value: "5432"
-      - key: DB_POSTGRESDB_DATABASE
-        value: postgres
-      - key: DB_POSTGRESDB_USER
-        value: postgres
-      - key: DB_POSTGRESDB_PASSWORD
-        sync: false
-      - key: DB_POSTGRESDB_SCHEMA
-        value: n8n
+      # n8n runtime
       - key: N8N_PROTOCOL
         value: https
-      - key: N8N_PORT
-        value: "5678"
+      - key: N8N_WEBHOOK_URL
+        value: https://clariva-n8n.onrender.com
       - key: EXECUTIONS_PROCESS
         value: main
       - key: GENERIC_TIMEZONE
         value: America/Toronto
+      # Postgres backing — Neon free tier (n8n internal tables)
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        sync: false
+      - key: DB_POSTGRESDB_PORT
+        value: "5432"
+      - key: DB_POSTGRESDB_DATABASE
+        value: neondb
+      - key: DB_POSTGRESDB_USER
+        sync: false
+      - key: DB_POSTGRESDB_PASSWORD
+        sync: false
+      - key: DB_POSTGRESDB_SCHEMA
+        value: n8n
+      - key: DB_POSTGRESDB_SSL_ENABLED
+        value: "true"
+      - key: DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED
+        value: "false"
+      # Supabase (app data — agents read/write via service role)
       - key: SUPABASE_URL
         value: https://qjclbnbzntdxfjuomdwr.supabase.co
       - key: SUPABASE_SERVICE_KEY
