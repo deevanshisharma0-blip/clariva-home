@@ -28,7 +28,7 @@ services:
       - key: DB_TYPE
         value: postgresdb
       - key: DB_POSTGRESDB_HOST
-        value: ep-misty-leaf-a6o8cfyp.us-west-2.aws.neon.tech
+        value: ep-misty-leaf-a6o8cfyp-pooler.us-west-2.aws.neon.tech
       - key: DB_POSTGRESDB_PORT
         value: "5432"
       - key: DB_POSTGRESDB_DATABASE
