@@ -28,13 +28,13 @@ services:
       - key: DB_TYPE
         value: postgresdb
       - key: DB_POSTGRESDB_HOST
-        sync: false
+        value: ep-misty-leaf-a6o8cfyp.us-west-2.aws.neon.tech
       - key: DB_POSTGRESDB_PORT
         value: "5432"
       - key: DB_POSTGRESDB_DATABASE
         value: neondb
       - key: DB_POSTGRESDB_USER
-        sync: false
+        value: neondb_owner
       - key: DB_POSTGRESDB_PASSWORD
         sync: false
       - key: DB_POSTGRESDB_SCHEMA
