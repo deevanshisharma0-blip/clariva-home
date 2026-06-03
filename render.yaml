@@ -23,7 +23,7 @@ services:
       - key: DB_POSTGRESDB_DATABASE
         value: postgres
       - key: DB_POSTGRESDB_USER
-        value: postgres.qjclbnbzntdxfjuomdwr
+        value: postgres
       - key: DB_POSTGRESDB_PASSWORD
         sync: false
       - key: DB_POSTGRESDB_SCHEMA
