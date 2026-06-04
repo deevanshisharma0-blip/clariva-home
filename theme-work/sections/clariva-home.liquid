@@ -1,0 +1,861 @@
+<!-- CH_HOME_V1 -->
+<!-- ════════════════════════════════════════════════════
+     CLARIVA HOME — Homepage Sections
+     ════════════════════════════════════════════════════ -->
+
+<style>
+/* ── Hero ─────────────────────────────────────────────── */
+.ch-hero {
+  min-height: calc(100vh - 108px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 80px 40px;
+  gap: 72px;
+}
+.ch-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--sage);
+  margin-bottom: 20px;
+}
+.ch-hero-eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1.5px;
+  background: var(--sage);
+}
+.ch-hero-h1 {
+  font-family: var(--serif);
+  font-size: clamp(36px, 4.5vw, 64px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: .02em;
+  color: var(--charcoal);
+  margin-bottom: 20px;
+}
+.ch-hero-h1 em {
+  font-style: italic;
+  color: var(--sage);
+}
+.ch-hero-sub {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.85;
+  margin-bottom: 36px;
+  max-width: 460px;
+}
+.ch-hero-ctas {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 44px;
+}
+.ch-hero-proof {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.ch-hero-proof-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ch-hero-proof-item svg { color: var(--sage); flex-shrink: 0; }
+
+.ch-hero-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ch-hero-img-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+}
+.ch-hero-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.ch-hero-img-placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(145deg, #EDE9E2, #F5F2EE);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.ch-hero-badge {
+  position: absolute;
+  bottom: 28px;
+  left: -20px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 18px;
+  box-shadow: 0 8px 28px var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ch-hero-badge-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--warm-white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.ch-hero-badge-text { line-height: 1.3; }
+.ch-hero-badge-val {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--charcoal);
+}
+.ch-hero-badge-label {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .04em;
+}
+
+/* ── Trust Bar ────────────────────────────────────────── */
+.ch-trust {
+  background: var(--warm-white);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 40px;
+}
+.ch-trust-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.ch-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--charcoal-mid);
+  letter-spacing: .04em;
+}
+.ch-trust-item svg { color: var(--sage); flex-shrink: 0; }
+
+/* ── Collections Grid ─────────────────────────────────── */
+.ch-collections {
+  padding: 96px 40px;
+  background: var(--cream);
+}
+.ch-collections-inner { max-width: 1240px; margin: 0 auto; }
+.ch-collections-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.ch-coll-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.ch-coll-card {
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  background: var(--warm-white);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  align-items: flex-end;
+  transition: transform .3s;
+}
+.ch-coll-card:hover { transform: translateY(-4px); }
+.ch-coll-card:first-child {
+  grid-row: span 2;
+  aspect-ratio: unset;
+}
+.ch-coll-card-img {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  transition: transform .5s;
+}
+.ch-coll-card:hover .ch-coll-card-img { transform: scale(1.04); }
+.ch-coll-card-overlay {
+  position: relative;
+  z-index: 1;
+  padding: 24px;
+  background: linear-gradient(to top, rgba(44,44,44,.75) 0%, transparent 100%);
+  width: 100%;
+}
+.ch-coll-card-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  opacity: .3;
+}
+.ch-coll-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.7);
+  margin-bottom: 4px;
+}
+.ch-coll-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: #fff;
+  font-weight: 400;
+  margin-bottom: 12px;
+}
+.ch-coll-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.85);
+  transition: gap .2s;
+}
+.ch-coll-link:hover { gap: 10px; }
+.ch-coll-link::after { content: '→'; }
+
+/* ── Products Grid ────────────────────────────────────── */
+.ch-products {
+  padding: 80px 40px;
+  background: var(--warm-white);
+  border-top: 1px solid var(--border);
+}
+.ch-products-inner { max-width: 1240px; margin: 0 auto; }
+.ch-products-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.ch-products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* ── Features ─────────────────────────────────────────── */
+.ch-features {
+  padding: 96px 40px;
+  background: var(--cream);
+  border-top: 1px solid var(--border);
+}
+.ch-features-inner { max-width: 1240px; margin: 0 auto; }
+.ch-features-header { text-align: center; margin-bottom: 56px; }
+.ch-features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+.ch-feat {
+  text-align: center;
+}
+.ch-feat-icon {
+  width: 72px;
+  height: 72px;
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 28px;
+  transition: background .3s, border-color .3s;
+}
+.ch-feat:hover .ch-feat-icon {
+  background: rgba(107, 124, 106, .1);
+  border-color: var(--sage);
+}
+.ch-feat-title {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--charcoal);
+  margin-bottom: 10px;
+}
+.ch-feat-body {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+/* ── Lifestyle Banner ─────────────────────────────────── */
+.ch-lifestyle {
+  padding: 80px 40px;
+  background: var(--charcoal);
+  position: relative;
+  overflow: hidden;
+}
+.ch-lifestyle-bg {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  opacity: .2;
+}
+.ch-lifestyle-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+.ch-lifestyle-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--sage-light);
+  margin-bottom: 16px;
+}
+.ch-lifestyle-h2 {
+  font-family: var(--serif);
+  font-size: clamp(30px, 4vw, 52px);
+  font-weight: 400;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+.ch-lifestyle-h2 em {
+  font-style: italic;
+  color: var(--sage-light);
+}
+.ch-lifestyle-sub {
+  font-size: 15px;
+  color: rgba(255,255,255,.6);
+  line-height: 1.8;
+  margin-bottom: 36px;
+}
+
+/* ── Testimonials ─────────────────────────────────────── */
+.ch-testimonials {
+  padding: 96px 40px;
+  background: var(--cream);
+  border-top: 1px solid var(--border);
+}
+.ch-testimonials-inner { max-width: 1240px; margin: 0 auto; }
+.ch-testimonials-header { text-align: center; margin-bottom: 56px; }
+.ch-testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.ch-testimonial {
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  padding: 32px;
+}
+.ch-testimonial-stars {
+  color: #F5A623;
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+.ch-testimonial-body {
+  font-size: 14px;
+  color: var(--charcoal-mid);
+  line-height: 1.85;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+.ch-testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ch-testimonial-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--sage);
+  flex-shrink: 0;
+}
+.ch-testimonial-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--charcoal);
+}
+.ch-testimonial-loc {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* ── Newsletter ───────────────────────────────────────── */
+.ch-newsletter-section {
+  padding: 80px 40px;
+  background: var(--warm-white);
+  border-top: 1px solid var(--border);
+}
+.ch-newsletter-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+.ch-newsletter-form {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+.ch-newsletter-form .ch-newsletter-input {
+  flex: 1;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 2px;
+  padding: 13px 16px;
+  font-size: 14px;
+  font-family: var(--sans);
+  color: var(--charcoal);
+  outline: none;
+  transition: border-color .2s;
+}
+.ch-newsletter-form .ch-newsletter-input:focus { border-color: var(--sage); }
+.ch-newsletter-form .ch-newsletter-input::placeholder { color: var(--muted-light); }
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .ch-hero { gap: 40px; padding: 60px 32px; }
+  .ch-products-grid { grid-template-columns: repeat(2, 1fr); }
+  .ch-features-grid { grid-template-columns: repeat(2, 1fr); }
+  .ch-coll-cards { grid-template-columns: repeat(2, 1fr); }
+  .ch-coll-card:first-child { grid-row: auto; }
+}
+@media (max-width: 768px) {
+  .ch-hero { grid-template-columns: 1fr; gap: 40px; padding: 48px 24px; min-height: auto; }
+  .ch-hero-visual { order: -1; }
+  .ch-hero-badge { left: 0; }
+  .ch-collections, .ch-products, .ch-features, .ch-testimonials, .ch-newsletter-section { padding: 64px 24px; }
+  .ch-coll-cards { grid-template-columns: 1fr; }
+  .ch-testimonials-grid { grid-template-columns: 1fr; }
+  .ch-features-grid { grid-template-columns: 1fr 1fr; }
+  .ch-newsletter-form { flex-direction: column; }
+  .ch-trust { padding: 16px 24px; }
+  .ch-trust-inner { gap: 20px; }
+  .ch-lifestyle { padding: 60px 24px; }
+}
+@media (max-width: 480px) {
+  .ch-features-grid { grid-template-columns: 1fr; }
+  .ch-hero-proof { flex-direction: column; gap: 12px; }
+}
+</style>
+
+<!-- ═══ HERO ═══ -->
+<section class="ch-hero" id="hero">
+  <div class="ch-hero-content">
+    <div class="ch-hero-eyebrow">Kitchen & Home</div>
+    <h1 class="ch-hero-h1">Smart Homes,<br><em>Simpler Lives.</em></h1>
+    <p class="ch-hero-sub">
+      Thoughtfully curated kitchen gadgets and home organization solutions — designed to make everyday life a little more beautiful and a lot more efficient.
+    </p>
+    <div class="ch-hero-ctas">
+      <a href="/collections/all" class="ch-btn ch-btn-primary">Shop Now</a>
+      <a href="/collections/best-sellers" class="ch-btn ch-btn-outline">Best Sellers</a>
+    </div>
+    <div class="ch-hero-proof">
+      <div class="ch-hero-proof-item">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M7.5 1L9.5 5.5L14 6.3L10.7 9.4L11.5 14L7.5 11.8L3.5 14L4.3 9.4L1 6.3L5.5 5.5Z"/>
+        </svg>
+        4.8 / 5 avg rating
+      </div>
+      <div class="ch-hero-proof-item">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="1" y="4" width="13" height="9" rx="1"/><path d="M1 7h13M5 4V2.5a2.5 2.5 0 0 1 5 0V4"/>
+        </svg>
+        Secure checkout
+      </div>
+      <div class="ch-hero-proof-item">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="7.5" cy="7.5" r="6.5"/><path d="M5 7.5l2 2 3-3"/>
+        </svg>
+        30-day returns
+      </div>
+    </div>
+  </div>
+
+  <div class="ch-hero-visual">
+    <div class="ch-hero-img-wrap">
+      {%- if section.settings.hero_image != blank -%}
+        <img class="ch-hero-img"
+             src="{{ section.settings.hero_image | image_url: width: 960 }}"
+             alt="{{ section.settings.hero_image.alt | default: 'Clariva Home' }}"
+             loading="eager" width="480" height="640">
+      {%- else -%}
+        <div class="ch-hero-img-placeholder">
+          <span style="font-size:64px">🏡</span>
+          <p style="font-family:var(--serif);font-size:18px;color:var(--muted)">Clariva Home</p>
+        </div>
+      {%- endif -%}
+
+      <div class="ch-hero-badge">
+        <div class="ch-hero-badge-icon">🇨🇦</div>
+        <div class="ch-hero-badge-text">
+          <div class="ch-hero-badge-val">Canadian-Owned</div>
+          <div class="ch-hero-badge-label">Ships CA & USA</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TRUST BAR ═══ -->
+<div class="ch-trust">
+  <div class="ch-trust-inner">
+    <div class="ch-trust-item">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="5" width="14" height="9" rx="1"/><path d="M4 5V4a4 4 0 0 1 8 0v1"/>
+      </svg>
+      Free Shipping $50+
+    </div>
+    <div class="ch-trust-item">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="8" cy="8" r="7"/><path d="M5 8l2 2 4-4"/>
+      </svg>
+      30-Day Easy Returns
+    </div>
+    <div class="ch-trust-item">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 1l2 4.5L15 6.3l-3.5 3.3.8 4.7L8 12l-4.3 2.3.8-4.7L1 6.3l5-.8z"/>
+      </svg>
+      Curated & Quality-Tested
+    </div>
+    <div class="ch-trust-item">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M2 2h2l1.6 6.4a1 1 0 0 0 1 .8h6.1a1 1 0 0 0 1-.76L15 5H5"/>
+        <circle cx="6.5" cy="13" r="1" fill="currentColor" stroke="none"/>
+        <circle cx="11.5" cy="13" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+      Secure Checkout
+    </div>
+    <div class="ch-trust-item">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 1s5 3.5 5 8a5 5 0 0 1-10 0c0-4.5 5-8 5-8z"/>
+      </svg>
+      🇨🇦 Canadian-Owned
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COLLECTIONS ═══ -->
+<section class="ch-collections">
+  <div class="ch-collections-inner">
+    <div class="ch-collections-header">
+      <div>
+        <div class="ch-section-label">Shop by Category</div>
+        <h2 class="ch-section-h2">Everything Your Home <em>Deserves</em></h2>
+      </div>
+      <a href="/collections/all" class="ch-btn ch-btn-outline-sage">View All Products</a>
+    </div>
+
+    <div class="ch-coll-cards">
+      <!-- Kitchen Gadgets -->
+      <a href="/collections/kitchen-gadgets" class="ch-coll-card">
+        {%- assign coll_kitchen = collections['kitchen-gadgets'] -%}
+        {%- if coll_kitchen.image -%}
+          <img class="ch-coll-card-img" src="{{ coll_kitchen.image | image_url: width: 800 }}" alt="Kitchen Gadgets" loading="lazy">
+        {%- else -%}
+          <div class="ch-coll-card-placeholder">🍳</div>
+        {%- endif -%}
+        <div class="ch-coll-card-overlay">
+          <div class="ch-coll-label">Featured Collection</div>
+          <div class="ch-coll-title">Kitchen Gadgets</div>
+          <span class="ch-coll-link">Shop Now</span>
+        </div>
+      </a>
+
+      <!-- Home Organization -->
+      <a href="/collections/home-organization" class="ch-coll-card">
+        {%- assign coll_org = collections['home-organization'] -%}
+        {%- if coll_org.image -%}
+          <img class="ch-coll-card-img" src="{{ coll_org.image | image_url: width: 600 }}" alt="Home Organization" loading="lazy">
+        {%- else -%}
+          <div class="ch-coll-card-placeholder">🗂</div>
+        {%- endif -%}
+        <div class="ch-coll-card-overlay">
+          <div class="ch-coll-label">Organize & Simplify</div>
+          <div class="ch-coll-title">Home Organization</div>
+          <span class="ch-coll-link">Shop Now</span>
+        </div>
+      </a>
+
+      <!-- Best Sellers -->
+      <a href="/collections/best-sellers" class="ch-coll-card">
+        {%- assign coll_best = collections['best-sellers'] -%}
+        {%- if coll_best.image -%}
+          <img class="ch-coll-card-img" src="{{ coll_best.image | image_url: width: 600 }}" alt="Best Sellers" loading="lazy">
+        {%- else -%}
+          <div class="ch-coll-card-placeholder">⭐</div>
+        {%- endif -%}
+        <div class="ch-coll-card-overlay">
+          <div class="ch-coll-label">Customer Favourites</div>
+          <div class="ch-coll-title">Best Sellers</div>
+          <span class="ch-coll-link">Shop Now</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURED PRODUCTS ═══ -->
+<section class="ch-products">
+  <div class="ch-products-inner">
+    <div class="ch-products-header">
+      <div class="ch-section-label">Trending Now</div>
+      <h2 class="ch-section-h2">Our <em>Best Sellers</em></h2>
+      <p class="ch-section-sub" style="margin: 0 auto;">
+        Handpicked products that customers love — quality tested, affordably priced.
+      </p>
+    </div>
+
+    <div class="ch-products-grid">
+      {%- assign best = collections['best-sellers'] -%}
+      {%- if best != blank -%}
+        {%- for product in best.products limit: 4 -%}
+          <div class="ch-card">
+            <a href="{{ product.url }}" class="ch-card-img">
+              {%- if product.featured_image -%}
+                <img src="{{ product.featured_image | image_url: width: 600 }}"
+                     alt="{{ product.featured_image.alt | escape }}"
+                     loading="lazy" width="600" height="600">
+              {%- else -%}
+                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--warm-white)">📦</div>
+              {%- endif -%}
+              {%- if product.compare_at_price > product.price -%}
+                <span class="ch-card-badge">Sale</span>
+              {%- endif -%}
+            </a>
+            <div class="ch-card-body">
+              <div class="ch-card-tag">{{ product.type | default: 'Clariva Home' }}</div>
+              <a href="{{ product.url }}" class="ch-card-title">{{ product.title }}</a>
+              <div class="ch-card-vendor">{{ product.vendor }}</div>
+              <div class="ch-card-price-row">
+                <span class="ch-card-price">{{ product.price | money }}</span>
+                {%- if product.compare_at_price > product.price -%}
+                  <span class="ch-card-compare">{{ product.compare_at_price | money }}</span>
+                  {%- assign savings = product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price -%}
+                  <span class="ch-card-savings">-{{ savings }}%</span>
+                {%- endif -%}
+              </div>
+              <a href="{{ product.url }}" class="ch-btn ch-btn-primary ch-card-cta">View Product</a>
+            </div>
+          </div>
+        {%- else -%}
+          {%- for i in (1..4) -%}
+            <div class="ch-card">
+              <div class="ch-card-img" style="background:var(--warm-white);display:flex;align-items:center;justify-content:center;font-size:48px">
+                {%- case i -%}
+                  {%- when 1 -%}🔪
+                  {%- when 2 -%}🫙
+                  {%- when 3 -%}📦
+                  {%- when 4 -%}🍴
+                {%- endcase -%}
+              </div>
+              <div class="ch-card-body">
+                <div class="ch-card-tag">Kitchen Gadgets</div>
+                <div class="ch-card-title">Coming Soon</div>
+                <div class="ch-card-vendor">Clariva Home</div>
+                <div class="ch-card-price-row">
+                  <span class="ch-card-price">$XX.XX</span>
+                </div>
+              </div>
+            </div>
+          {%- endfor -%}
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+
+    <div style="text-align:center;margin-top:44px">
+      <a href="/collections/all" class="ch-btn ch-btn-outline">See All Products</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURES / WHY CLARIVA ═══ -->
+<section class="ch-features">
+  <div class="ch-features-inner">
+    <div class="ch-features-header">
+      <div class="ch-section-label">Why Clariva Home</div>
+      <h2 class="ch-section-h2">Built for Real <em>Homes</em></h2>
+    </div>
+
+    <div class="ch-features-grid">
+      <div class="ch-feat">
+        <div class="ch-feat-icon">🧪</div>
+        <div class="ch-feat-title">Quality Tested</div>
+        <p class="ch-feat-body">Every product is hand-selected and tested to meet our standards before it reaches your door.</p>
+      </div>
+      <div class="ch-feat">
+        <div class="ch-feat-icon">💰</div>
+        <div class="ch-feat-title">Unbeatable Value</div>
+        <p class="ch-feat-body">Premium-quality products at prices that make sense — no markups, no compromises.</p>
+      </div>
+      <div class="ch-feat">
+        <div class="ch-feat-icon">🚚</div>
+        <div class="ch-feat-title">Fast Delivery</div>
+        <p class="ch-feat-body">Ships to Canada and USA. Free shipping on orders over $50. Track every package in real time.</p>
+      </div>
+      <div class="ch-feat">
+        <div class="ch-feat-icon">🔄</div>
+        <div class="ch-feat-title">Hassle-Free Returns</div>
+        <p class="ch-feat-body">30-day returns, no questions asked. We stand behind every product we sell.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ LIFESTYLE BANNER ═══ -->
+<section class="ch-lifestyle">
+  {%- if section.settings.lifestyle_image != blank -%}
+    <img class="ch-lifestyle-bg"
+         src="{{ section.settings.lifestyle_image | image_url: width: 1600 }}"
+         alt="" aria-hidden="true" loading="lazy">
+  {%- endif -%}
+  <div class="ch-lifestyle-inner">
+    <div class="ch-lifestyle-label">The Clariva Way</div>
+    <h2 class="ch-lifestyle-h2">A Home That Works <em>For You</em></h2>
+    <p class="ch-lifestyle-sub">
+      Every corner of your home should spark joy — from your kitchen countertop to your storage room. We curate products that make daily routines effortless.
+    </p>
+    <a href="/collections/all" class="ch-btn ch-btn-sage">Explore the Collection</a>
+  </div>
+</section>
+
+<!-- ═══ TESTIMONIALS ═══ -->
+<section class="ch-testimonials">
+  <div class="ch-testimonials-inner">
+    <div class="ch-testimonials-header">
+      <div class="ch-section-label">Customer Love</div>
+      <h2 class="ch-section-h2">What Our <em>Customers Say</em></h2>
+    </div>
+
+    <div class="ch-testimonials-grid">
+      <div class="ch-testimonial">
+        <div class="ch-testimonial-stars">★★★★★</div>
+        <p class="ch-testimonial-body">"The kitchen organizer completely transformed my pantry. Finally, a product that actually fits my space and looks beautiful too!"</p>
+        <div class="ch-testimonial-author">
+          <div class="ch-testimonial-avatar">S</div>
+          <div>
+            <div class="ch-testimonial-name">Sarah M.</div>
+            <div class="ch-testimonial-loc">Toronto, ON 🇨🇦</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ch-testimonial">
+        <div class="ch-testimonial-stars">★★★★★</div>
+        <p class="ch-testimonial-body">"Fast shipping, great quality. The garlic press I ordered is 10x better than what I was using before. Clariva has a customer for life!"</p>
+        <div class="ch-testimonial-author">
+          <div class="ch-testimonial-avatar">J</div>
+          <div>
+            <div class="ch-testimonial-name">James T.</div>
+            <div class="ch-testimonial-loc">Seattle, WA 🇺🇸</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ch-testimonial">
+        <div class="ch-testimonial-stars">★★★★★</div>
+        <p class="ch-testimonial-body">"I've ordered 3 times now. The products are always as described, the packaging is eco-friendly, and returns are genuinely hassle-free."</p>
+        <div class="ch-testimonial-author">
+          <div class="ch-testimonial-avatar">A</div>
+          <div>
+            <div class="ch-testimonial-name">Amelia P.</div>
+            <div class="ch-testimonial-loc">Vancouver, BC 🇨🇦</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ NEWSLETTER ═══ -->
+<section class="ch-newsletter-section">
+  <div class="ch-newsletter-inner">
+    <div class="ch-section-label">Stay Connected</div>
+    <h2 class="ch-section-h2">Get <em>10% Off</em> Your First Order</h2>
+    <p class="ch-section-sub" style="margin: 0 auto 8px;">
+      Join 5,000+ home lovers who get exclusive deals, organization tips, and early access to new arrivals.
+    </p>
+
+    {% form 'customer', id: 'homepage-newsletter' %}
+      <input type="hidden" name="contact[tags]" value="newsletter,homepage">
+      <div class="ch-newsletter-form">
+        <input type="email" name="contact[email]" placeholder="Enter your email address" class="ch-newsletter-input" required>
+        <button type="submit" class="ch-btn ch-btn-sage">Get 10% Off</button>
+      </div>
+      {%- if form.posted_successfully? -%}
+        <p style="color:var(--sage);font-size:14px;margin-top:12px;font-weight:500">
+          🎉 Welcome! Your 10% discount code is on its way to your inbox.
+        </p>
+      {%- endif -%}
+    {% endform %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Clariva Home Page",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "hero_image",
+      "label": "Hero Image"
+    },
+    {
+      "type": "image_picker",
+      "id": "lifestyle_image",
+      "label": "Lifestyle Banner Background"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Clariva Home Page"
+    }
+  ]
+}
+{% endschema %}

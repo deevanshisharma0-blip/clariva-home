@@ -1,0 +1,133 @@
+<style>
+.ch-coll-page { max-width: 1240px; margin: 0 auto; padding: 48px 40px 80px; }
+.ch-coll-page-header { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.ch-coll-page-title { font-family: var(--serif); font-size: clamp(28px, 3vw, 44px); font-weight: 400; color: var(--charcoal); margin-bottom: 8px; }
+.ch-coll-page-desc { font-size: 14px; color: var(--muted); max-width: 600px; line-height: 1.8; }
+.ch-coll-page-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.ch-coll-count { font-size: 13px; color: var(--muted); }
+.ch-coll-sort select { font-family: var(--sans); font-size: 13px; color: var(--charcoal); border: 1px solid var(--border); border-radius: 2px; padding: 8px 12px; background: #fff; outline: none; cursor: pointer; }
+.ch-coll-products { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.ch-empty { text-align: center; padding: 80px 24px; }
+.ch-empty-icon { font-size: 56px; margin-bottom: 20px; }
+.ch-empty h2 { font-family: var(--serif); font-size: 28px; font-weight: 400; margin-bottom: 12px; }
+.ch-empty p { color: var(--muted); margin-bottom: 28px; }
+.ch-pagination { display: flex; justify-content: center; gap: 8px; margin-top: 48px; }
+.ch-pagination a, .ch-pagination span { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 2px; font-size: 13px; font-weight: 500; color: var(--charcoal); transition: all .2s; }
+.ch-pagination a:hover { background: var(--sage); color: #fff; border-color: var(--sage); }
+.ch-pagination .current { background: var(--charcoal); color: #fff; border-color: var(--charcoal); }
+
+/* Breadcrumb */
+.ch-breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 24px; display: flex; align-items: center; gap: 8px; }
+.ch-breadcrumb a { color: var(--muted); transition: color .2s; }
+.ch-breadcrumb a:hover { color: var(--sage); }
+.ch-breadcrumb span { color: var(--muted-light); }
+
+@media (max-width: 1024px) { .ch-coll-products { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 768px) {
+  .ch-coll-page { padding: 32px 24px 60px; }
+  .ch-coll-products { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) { .ch-coll-products { grid-template-columns: 1fr; } }
+</style>
+
+<div class="ch-coll-page">
+  <nav class="ch-breadcrumb">
+    <a href="/">Home</a>
+    <span>/</span>
+    <a href="/collections/all">Collections</a>
+    <span>/</span>
+    <span>{{ collection.title }}</span>
+  </nav>
+
+  <div class="ch-coll-page-header">
+    <h1 class="ch-coll-page-title">{{ collection.title }}</h1>
+    {%- if collection.description != blank -%}
+      <div class="ch-coll-page-desc">{{ collection.description }}</div>
+    {%- endif -%}
+  </div>
+
+  <div class="ch-coll-page-meta">
+    <span class="ch-coll-count">{{ collection.products_count }} product{% if collection.products_count != 1 %}s{% endif %}</span>
+    <div class="ch-coll-sort">
+      <select onchange="location.href='?sort_by='+this.value">
+        <option value="manual" {% if collection.sort_by == 'manual' %}selected{% endif %}>Featured</option>
+        <option value="best-selling" {% if collection.sort_by == 'best-selling' %}selected{% endif %}>Best Selling</option>
+        <option value="price-ascending" {% if collection.sort_by == 'price-ascending' %}selected{% endif %}>Price: Low to High</option>
+        <option value="price-descending" {% if collection.sort_by == 'price-descending' %}selected{% endif %}>Price: High to Low</option>
+        <option value="created-descending" {% if collection.sort_by == 'created-descending' %}selected{% endif %}>Newest</option>
+      </select>
+    </div>
+  </div>
+
+  {%- if collection.products.size > 0 -%}
+    <div class="ch-coll-products">
+      {%- for product in collection.products -%}
+        <div class="ch-card">
+          <a href="{{ product.url }}" class="ch-card-img">
+            {%- if product.featured_image -%}
+              <img src="{{ product.featured_image | image_url: width: 600 }}"
+                   alt="{{ product.featured_image.alt | escape }}"
+                   loading="lazy" width="600" height="600">
+            {%- else -%}
+              <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--warm-white)">📦</div>
+            {%- endif -%}
+            {%- if product.compare_at_price > product.price -%}
+              <span class="ch-card-badge">Sale</span>
+            {%- elsif product.tags contains 'new' -%}
+              <span class="ch-card-badge new">New</span>
+            {%- endif -%}
+          </a>
+          <div class="ch-card-body">
+            <div class="ch-card-tag">{{ product.type | default: 'Clariva Home' }}</div>
+            <a href="{{ product.url }}" class="ch-card-title">{{ product.title }}</a>
+            <div class="ch-card-vendor">{{ product.vendor }}</div>
+            <div class="ch-card-price-row">
+              <span class="ch-card-price">{{ product.price | money }}</span>
+              {%- if product.compare_at_price > product.price -%}
+                <span class="ch-card-compare">{{ product.compare_at_price | money }}</span>
+                {%- assign savings = product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price -%}
+                <span class="ch-card-savings">-{{ savings }}%</span>
+              {%- endif -%}
+            </div>
+            <a href="{{ product.url }}" class="ch-btn ch-btn-primary ch-card-cta">View Product</a>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+
+    {%- if paginate.pages > 1 -%}
+      {% paginate collection.products by 16 %}
+        <div class="ch-pagination">
+          {%- if paginate.previous -%}
+            <a href="{{ paginate.previous.url }}">‹</a>
+          {%- endif -%}
+          {%- for part in paginate.parts -%}
+            {%- if part.is_link -%}
+              <a href="{{ part.url }}">{{ part.title }}</a>
+            {%- else -%}
+              <span class="current">{{ part.title }}</span>
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if paginate.next -%}
+            <a href="{{ paginate.next.url }}">›</a>
+          {%- endif -%}
+        </div>
+      {% endpaginate %}
+    {%- endif -%}
+  {%- else -%}
+    <div class="ch-empty">
+      <div class="ch-empty-icon">🏡</div>
+      <h2>Coming Soon</h2>
+      <p>We're adding products to this collection. Check back soon!</p>
+      <a href="/collections/all" class="ch-btn ch-btn-primary">Browse All Products</a>
+    </div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "Clariva Collection",
+  "settings": [],
+  "presets": [{ "name": "Clariva Collection" }]
+}
+{% endschema %}

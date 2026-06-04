@@ -1,0 +1,148 @@
+<style>
+.ch-cart-page { max-width: 1100px; margin: 0 auto; padding: 48px 40px 96px; }
+.ch-cart-title { font-family: var(--serif); font-size: clamp(28px, 3vw, 44px); font-weight: 400; color: var(--charcoal); margin-bottom: 40px; }
+.ch-cart-layout { display: grid; grid-template-columns: 1fr 360px; gap: 48px; align-items: start; }
+.ch-cart-items { display: flex; flex-direction: column; gap: 1px; }
+.ch-cart-item { display: grid; grid-template-columns: 96px 1fr auto; gap: 20px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--border); }
+.ch-cart-item-img { width: 96px; height: 96px; border-radius: 3px; overflow: hidden; background: var(--warm-white); flex-shrink: 0; }
+.ch-cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
+.ch-cart-item-name { font-family: var(--serif); font-size: 16px; font-weight: 400; color: var(--charcoal); margin-bottom: 4px; }
+.ch-cart-item-variant { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.ch-cart-item-price { font-size: 14px; font-weight: 600; color: var(--charcoal); }
+.ch-cart-item-qty { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.ch-cart-qty-ctrl { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 2px; }
+.ch-cart-qty-btn { width: 32px; height: 32px; border: none; background: none; cursor: pointer; font-size: 16px; color: var(--charcoal); transition: background .2s; }
+.ch-cart-qty-btn:hover { background: var(--warm-white); }
+.ch-cart-qty-val { width: 40px; height: 32px; border: none; border-left: 1px solid var(--border); border-right: 1px solid var(--border); text-align: center; font-size: 13px; font-weight: 600; font-family: var(--sans); color: var(--charcoal); }
+.ch-cart-remove { font-size: 12px; color: var(--muted); text-decoration: underline; cursor: pointer; background: none; border: none; }
+.ch-cart-remove:hover { color: var(--terra); }
+.ch-cart-item-total { font-family: var(--serif); font-size: 18px; font-weight: 500; color: var(--charcoal); text-align: right; }
+
+/* Summary */
+.ch-cart-summary { background: var(--warm-white); border: 1px solid var(--border); border-radius: 4px; padding: 28px; position: sticky; top: 100px; }
+.ch-cart-summary-title { font-family: var(--serif); font-size: 20px; font-weight: 400; color: var(--charcoal); margin-bottom: 20px; }
+.ch-cart-line { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--charcoal-mid); padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
+.ch-cart-line:last-of-type { border-bottom: none; }
+.ch-cart-total { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1.5px solid var(--border); }
+.ch-cart-total-label { font-family: var(--serif); font-size: 18px; font-weight: 500; }
+.ch-cart-total-price { font-family: var(--serif); font-size: 24px; font-weight: 500; color: var(--charcoal); }
+.ch-cart-checkout-btn { width: 100%; margin-top: 20px; padding: 16px; font-size: 14px; }
+.ch-cart-continue { display: block; text-align: center; margin-top: 12px; font-size: 13px; color: var(--muted); text-decoration: underline; }
+.ch-cart-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 12px; line-height: 1.7; }
+.ch-cart-shipping-note { background: rgba(107,124,106,.08); border: 1px solid rgba(107,124,106,.2); border-radius: 3px; padding: 10px 14px; font-size: 12.5px; color: var(--sage-dark); margin-top: 16px; text-align: center; }
+
+/* Empty cart */
+.ch-cart-empty { text-align: center; padding: 96px 24px; }
+.ch-cart-empty-icon { font-size: 64px; margin-bottom: 24px; }
+.ch-cart-empty h2 { font-family: var(--serif); font-size: 32px; font-weight: 400; color: var(--charcoal); margin-bottom: 12px; }
+.ch-cart-empty p { font-size: 15px; color: var(--muted); margin-bottom: 32px; }
+
+@media (max-width: 900px) {
+  .ch-cart-layout { grid-template-columns: 1fr; }
+  .ch-cart-summary { position: static; }
+  .ch-cart-page { padding: 32px 24px 64px; }
+}
+@media (max-width: 480px) {
+  .ch-cart-item { grid-template-columns: 72px 1fr; }
+  .ch-cart-item-total { grid-column: 2; }
+}
+</style>
+
+<div class="ch-cart-page">
+  <h1 class="ch-cart-title">Your Cart</h1>
+
+  {%- if cart.item_count > 0 -%}
+    <div class="ch-cart-layout">
+      <div>
+        <form action="/cart" method="post" id="cart-form">
+          <div class="ch-cart-items">
+            {%- for item in cart.items -%}
+              <div class="ch-cart-item">
+                <a href="{{ item.product.url }}" class="ch-cart-item-img">
+                  {%- if item.image -%}
+                    <img src="{{ item.image | image_url: width: 200 }}" alt="{{ item.image.alt | escape }}" loading="lazy">
+                  {%- else -%}
+                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px">📦</div>
+                  {%- endif -%}
+                </a>
+                <div>
+                  <a href="{{ item.product.url }}" class="ch-cart-item-name">{{ item.product.title }}</a>
+                  {%- unless item.variant.title contains 'Default' -%}
+                    <div class="ch-cart-item-variant">{{ item.variant.title }}</div>
+                  {%- endunless -%}
+                  <div class="ch-cart-item-price">{{ item.price | money }}</div>
+                  <div class="ch-cart-item-qty">
+                    <div class="ch-cart-qty-ctrl">
+                      <button type="button" class="ch-cart-qty-btn" onclick="updateQty('{{ item.key }}', Math.max(1, parseInt(this.nextElementSibling.value)-1))">−</button>
+                      <input type="number" class="ch-cart-qty-val" value="{{ item.quantity }}" min="1" onchange="updateQty('{{ item.key }}', this.value)">
+                      <button type="button" class="ch-cart-qty-btn" onclick="updateQty('{{ item.key }}', parseInt(this.previousElementSibling.value)+1)">+</button>
+                    </div>
+                    <button type="button" class="ch-cart-remove" onclick="updateQty('{{ item.key }}', 0)">Remove</button>
+                  </div>
+                </div>
+                <div class="ch-cart-item-total">{{ item.line_price | money }}</div>
+              </div>
+            {%- endfor -%}
+          </div>
+        </form>
+      </div>
+
+      <div class="ch-cart-summary">
+        <div class="ch-cart-summary-title">Order Summary</div>
+        <div class="ch-cart-line">
+          <span>Subtotal ({{ cart.item_count }} item{% if cart.item_count != 1 %}s{% endif %})</span>
+          <span>{{ cart.total_price | money }}</span>
+        </div>
+        <div class="ch-cart-line">
+          <span>Shipping</span>
+          <span>Calculated at checkout</span>
+        </div>
+        <div class="ch-cart-total">
+          <span class="ch-cart-total-label">Total</span>
+          <span class="ch-cart-total-price">{{ cart.total_price | money }}</span>
+        </div>
+
+        {%- assign free_shipping_threshold = 5000 -%}
+        {%- if cart.total_price < free_shipping_threshold -%}
+          {%- assign remaining = free_shipping_threshold | minus: cart.total_price -%}
+          <div class="ch-cart-shipping-note">
+            You're {{ remaining | money }} away from <strong>free shipping</strong>! 🚚
+          </div>
+        {%- else -%}
+          <div class="ch-cart-shipping-note">
+            🎉 You qualify for <strong>free shipping</strong>!
+          </div>
+        {%- endif -%}
+
+        <a href="/checkout" class="ch-btn ch-btn-primary ch-cart-checkout-btn">Proceed to Checkout →</a>
+        <a href="/collections/all" class="ch-cart-continue">Continue Shopping</a>
+        <p class="ch-cart-note">🔒 Secure checkout &nbsp;·&nbsp; 🇨🇦 Canadian-owned &nbsp;·&nbsp; 🔄 30-day returns</p>
+      </div>
+    </div>
+  {%- else -%}
+    <div class="ch-cart-empty">
+      <div class="ch-cart-empty-icon">🛒</div>
+      <h2>Your cart is empty</h2>
+      <p>Discover our curated collection of kitchen gadgets and home organization solutions.</p>
+      <a href="/collections/all" class="ch-btn ch-btn-primary">Start Shopping</a>
+    </div>
+  {%- endif -%}
+</div>
+
+<script>
+function updateQty(key, qty) {
+  fetch('/cart/change.js', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: key, quantity: parseInt(qty) })
+  }).then(function() { location.reload(); });
+}
+</script>
+
+{% schema %}
+{
+  "name": "Clariva Cart",
+  "settings": [],
+  "presets": [{ "name": "Clariva Cart" }]
+}
+{% endschema %}

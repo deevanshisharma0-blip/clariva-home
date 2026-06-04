@@ -1,0 +1,231 @@
+<style>
+.ch-product-page { max-width: 1240px; margin: 0 auto; padding: 40px 40px 96px; }
+.ch-product-breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 32px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ch-product-breadcrumb a { color: var(--muted); transition: color .2s; }
+.ch-product-breadcrumb a:hover { color: var(--sage); }
+.ch-product-breadcrumb span { color: var(--muted-light); }
+.ch-product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+
+/* Gallery */
+.ch-product-gallery {}
+.ch-product-main-img {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--warm-white);
+  margin-bottom: 12px;
+}
+.ch-product-main-img img { width: 100%; height: 100%; object-fit: cover; }
+.ch-product-thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+.ch-product-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.ch-product-thumb:hover, .ch-product-thumb.active { border-color: var(--sage); }
+.ch-product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Info */
+.ch-product-info { position: sticky; top: 100px; }
+.ch-product-collection {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--sage);
+  margin-bottom: 10px;
+}
+.ch-product-title {
+  font-family: var(--serif);
+  font-size: clamp(24px, 2.5vw, 36px);
+  font-weight: 400;
+  color: var(--charcoal);
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+.ch-product-price-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.ch-product-price { font-family: var(--serif); font-size: 30px; font-weight: 500; color: var(--charcoal); }
+.ch-product-compare { font-size: 18px; color: var(--muted-light); text-decoration: line-through; }
+.ch-product-savings { font-size: 12px; font-weight: 600; color: var(--terra); background: rgba(196,113,74,.1); padding: 4px 10px; border-radius: 2px; }
+.ch-product-rating { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 13px; color: var(--muted); }
+.ch-product-rating-stars { color: #F5A623; letter-spacing: 2px; }
+.ch-product-desc { font-size: 14px; color: var(--charcoal-mid); line-height: 1.9; margin-bottom: 28px; }
+
+/* Variants */
+.ch-variant-label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--charcoal); margin-bottom: 10px; }
+.ch-variant-options { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+.ch-variant-btn {
+  padding: 8px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--charcoal);
+  background: #fff;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ch-variant-btn:hover, .ch-variant-btn.selected { border-color: var(--charcoal); background: var(--charcoal); color: #fff; }
+.ch-variant-btn[disabled] { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+
+/* Quantity */
+.ch-qty-row { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.ch-qty-label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--charcoal); }
+.ch-qty-ctrl { display: flex; align-items: center; border: 1.5px solid var(--border); border-radius: 2px; overflow: hidden; }
+.ch-qty-btn { width: 38px; height: 38px; border: none; background: #fff; font-size: 18px; cursor: pointer; color: var(--charcoal); transition: background .2s; }
+.ch-qty-btn:hover { background: var(--warm-white); }
+.ch-qty-input { width: 48px; height: 38px; border: none; border-left: 1px solid var(--border); border-right: 1px solid var(--border); text-align: center; font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--charcoal); outline: none; }
+
+/* ATC */
+.ch-atc-row { display: flex; gap: 10px; margin-bottom: 20px; }
+.ch-atc-btn { flex: 1; padding: 15px 24px; font-size: 13px; }
+.ch-buyit-btn { flex: 1; padding: 15px 24px; font-size: 13px; }
+
+/* Shipping notice */
+.ch-product-shipping { background: var(--warm-white); border: 1px solid var(--border-soft); border-radius: 3px; padding: 16px; margin-bottom: 24px; }
+.ch-product-shipping p { font-size: 13px; color: var(--charcoal-mid); display: flex; align-items: center; gap: 8px; line-height: 1.5; }
+.ch-product-shipping p + p { margin-top: 6px; }
+
+/* Product features */
+.ch-product-features { margin-bottom: 24px; }
+.ch-product-features li { font-size: 13.5px; color: var(--charcoal-mid); padding: 7px 0; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; gap: 10px; }
+.ch-product-features li:last-child { border-bottom: none; }
+.ch-product-features li::before { content: '✓'; color: var(--sage); font-weight: 700; flex-shrink: 0; }
+
+@media (max-width: 900px) {
+  .ch-product-layout { grid-template-columns: 1fr; gap: 32px; }
+  .ch-product-info { position: static; }
+  .ch-product-page { padding: 32px 24px 64px; }
+}
+</style>
+
+<div class="ch-product-page">
+  <nav class="ch-product-breadcrumb">
+    <a href="/">Home</a>
+    <span>/</span>
+    {%- if product.collections.size > 0 -%}
+      <a href="{{ product.collections.first.url }}">{{ product.collections.first.title }}</a>
+      <span>/</span>
+    {%- else -%}
+      <a href="/collections/all">All Products</a>
+      <span>/</span>
+    {%- endif -%}
+    <span>{{ product.title }}</span>
+  </nav>
+
+  <div class="ch-product-layout">
+    <!-- Gallery -->
+    <div class="ch-product-gallery">
+      <div class="ch-product-main-img" id="ch-main-img">
+        {%- if product.featured_image -%}
+          <img id="ch-main-img-el"
+               src="{{ product.featured_image | image_url: width: 800 }}"
+               alt="{{ product.featured_image.alt | escape }}"
+               loading="eager" width="800" height="800">
+        {%- else -%}
+          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:80px;background:var(--warm-white)">📦</div>
+        {%- endif -%}
+      </div>
+      {%- if product.images.size > 1 -%}
+        <div class="ch-product-thumbs">
+          {%- for image in product.images limit: 6 -%}
+            <div class="ch-product-thumb {% if forloop.first %}active{% endif %}"
+                 onclick="document.getElementById('ch-main-img-el').src='{{ image | image_url: width: 800 }}'; this.parentNode.querySelectorAll('.ch-product-thumb').forEach(t=>t.classList.remove('active')); this.classList.add('active')">
+              <img src="{{ image | image_url: width: 150 }}" alt="{{ image.alt | escape }}" loading="lazy">
+            </div>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    <!-- Info -->
+    <div class="ch-product-info">
+      {%- if product.collections.size > 0 -%}
+        <div class="ch-product-collection">{{ product.collections.first.title }}</div>
+      {%- endif -%}
+
+      <h1 class="ch-product-title">{{ product.title }}</h1>
+
+      <div class="ch-product-price-row">
+        <span class="ch-product-price">{{ product.price | money }}</span>
+        {%- if product.compare_at_price > product.price -%}
+          <span class="ch-product-compare">{{ product.compare_at_price | money }}</span>
+          {%- assign savings_pct = product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price -%}
+          <span class="ch-product-savings">Save {{ savings_pct }}%</span>
+        {%- endif -%}
+      </div>
+
+      <div class="ch-product-rating">
+        <span class="ch-product-rating-stars">★★★★★</span>
+        <span>4.8 (reviews)</span>
+      </div>
+
+      {%- if product.description != blank -%}
+        <div class="ch-product-desc">{{ product.description }}</div>
+      {%- endif -%}
+
+      {% form 'product', product, id: 'product-form' %}
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+
+        {%- for option in product.options_with_values -%}
+          <div class="ch-variant-label">{{ option.name }}</div>
+          <div class="ch-variant-options">
+            {%- for value in option.values -%}
+              <button type="button"
+                      class="ch-variant-btn {% if value == option.selected_value %}selected{% endif %}"
+                      data-option="{{ option.position }}" data-value="{{ value }}">
+                {{ value }}
+              </button>
+            {%- endfor -%}
+          </div>
+        {%- endfor -%}
+
+        <div class="ch-qty-row">
+          <span class="ch-qty-label">Qty</span>
+          <div class="ch-qty-ctrl">
+            <button type="button" class="ch-qty-btn" onclick="var i=document.getElementById('qty');i.value=Math.max(1,parseInt(i.value)-1)">−</button>
+            <input type="number" id="qty" name="quantity" value="1" min="1" class="ch-qty-input">
+            <button type="button" class="ch-qty-btn" onclick="var i=document.getElementById('qty');i.value=parseInt(i.value)+1">+</button>
+          </div>
+        </div>
+
+        <div class="ch-atc-row">
+          <button type="submit" name="add" class="ch-btn ch-btn-primary ch-atc-btn">
+            {%- if product.available -%}Add to Cart{%- else -%}Sold Out{%- endif -%}
+          </button>
+          <a href="/checkout?variant={{ product.selected_or_first_available_variant.id }}&quantity=1"
+             class="ch-btn ch-btn-outline ch-buyit-btn">Buy It Now</a>
+        </div>
+      {% endform %}
+
+      <div class="ch-product-shipping">
+        <p>🚚 Free shipping on orders over $50 CAD — ships to Canada & USA</p>
+        <p>🔄 30-day returns &nbsp;|&nbsp; ✅ Secure checkout &nbsp;|&nbsp; 🇨🇦 Canadian-owned brand</p>
+      </div>
+
+      <ul class="ch-product-features">
+        <li>Curated and quality-tested by the Clariva Home team</li>
+        <li>Fast fulfillment — most orders ship within 1–3 business days</li>
+        <li>Satisfaction guaranteed or your money back</li>
+        <li>Eco-conscious packaging</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Clariva Product",
+  "settings": [],
+  "presets": [{ "name": "Clariva Product" }]
+}
+{% endschema %}
