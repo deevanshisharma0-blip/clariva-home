@@ -386,6 +386,81 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ── Settings: read all ───────────────────────────────────────────
+    if (pathname === '/api/settings' && req.method === 'GET') {
+      const r = await supa('/business_settings?order=group_name.asc,key.asc');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
+      return;
+    }
+
+    // ── Settings: update one key ──────────────────────────────────────
+    if (pathname === '/api/settings' && req.method === 'POST') {
+      let body = '';
+      await new Promise(resolve => { req.on('data', c => body += c); req.on('end', resolve); });
+      const { key, value } = JSON.parse(body || '{}');
+      if (!key) { json(res, 400, { error: 'key required' }); return; }
+      await supa(`/business_settings?key=eq.${encodeURIComponent(key)}`, 'PATCH', { value: String(value), updated_at: new Date().toISOString() });
+      json(res, 200, { ok: true, key, value });
+      return;
+    }
+
+    // ── Shopify: update product price ─────────────────────────────────
+    if (pathname.match(/^\/api\/shopify\/products\/([^/]+)\/price$/) && req.method === 'POST') {
+      const [, productId] = pathname.match(/^\/api\/shopify\/products\/([^/]+)\/price$/);
+      let body = '';
+      await new Promise(resolve => { req.on('data', c => body += c); req.on('end', resolve); });
+      const { price, variant_id } = JSON.parse(body || '{}');
+      if (!price) { json(res, 400, { error: 'price required' }); return; }
+      // Get variants first
+      const prod = await shopify(`/admin/api/2024-10/products/${productId}.json?fields=id,variants`);
+      const vid = variant_id || prod.product?.variants?.[0]?.id;
+      if (!vid) { json(res, 404, { error: 'variant not found' }); return; }
+      // Update via PUT variant
+      const result = await new Promise(resolve => {
+        const data = JSON.stringify({ variant: { id: vid, price: String(price) } });
+        const req2 = https.request({
+          hostname: SHOP_DOMAIN, path: `/admin/api/2024-10/variants/${vid}.json`,
+          method: 'PUT', timeout: 15000,
+          headers: { 'X-Shopify-Access-Token': SHOP_TOKEN, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
+        }, res2 => { let d=''; res2.on('data',c=>d+=c); res2.on('end',()=>{ try{resolve(JSON.parse(d))}catch{resolve({})} }); });
+        req2.on('error', ()=>resolve({})); req2.on('timeout',()=>{req2.destroy();resolve({})});
+        req2.write(data); req2.end();
+      });
+      json(res, 200, { ok: true, variant: result.variant });
+      return;
+    }
+
+    // ── Trigger Research Agent via n8n ────────────────────────────────
+    if (pathname === '/api/trigger/research' && req.method === 'POST') {
+      let body = '';
+      await new Promise(resolve => { req.on('data', c => body += c); req.on('end', resolve); });
+      const payload = JSON.parse(body || '{}');
+      // Save as a user command so agents pick it up
+      const msg = payload.keywords
+        ? `Research products: ${payload.keywords}${payload.max_cost ? '. Max cost $'+payload.max_cost : ''}${payload.category ? '. Category: '+payload.category : ''}`
+        : 'Run research agent now';
+      const r = await supa('/user_commands', 'POST', { message: msg, status: 'pending', agent: 'Research Agent' });
+      // Also try to call n8n webhook if configured
+      const n8nUrl = env.N8N_URL;
+      if (n8nUrl) {
+        https.request({ hostname: new URL(n8nUrl).hostname, path: '/webhook/research-trigger', method: 'POST', timeout: 5000,
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(JSON.stringify(payload)) }
+        }, ()=>{}).on('error',()=>{}).end(JSON.stringify(payload));
+      }
+      json(res, 200, { ok: true, queued: msg });
+      return;
+    }
+
+    // ── Toggle agent enabled/disabled ─────────────────────────────────
+    if (pathname.match(/^\/api\/agents\/([^/]+)\/(enable|disable)$/) && req.method === 'POST') {
+      const [, agentKey, action] = pathname.match(/^\/api\/agents\/([^/]+)\/(enable|disable)$/);
+      const value = action === 'enable' ? 'true' : 'false';
+      const key = `agents.${agentKey}_enabled`;
+      await supa(`/business_settings?key=eq.${encodeURIComponent(key)}`, 'PATCH', { value, updated_at: new Date().toISOString() });
+      json(res, 200, { ok: true, agent: agentKey, enabled: value === 'true' });
+      return;
+    }
+
     // ── Commander: read commands ──────────────────────────────────────
     if (pathname === '/api/commands' && req.method === 'GET') {
       const r = await supa('/user_commands?order=created_at.desc&limit=50');

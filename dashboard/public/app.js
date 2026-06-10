@@ -316,13 +316,39 @@ async function candidates() {
                       return sb - sa;
                     });
 
-  if (!items.length) return `<div class="panel"><div class="empty">No candidates waiting — the Research Agent will surface new products here. Check back soon.</div></div>`;
+  if (!items.length) return `
+    <div class="panel"><div class="empty">No candidates yet — use the form below to tell the Research Agent what to look for.</div></div>
+    <div class="panel">
+      <div class="pnl-title">Request Research — Tell the Agent What to Find</div>
+      <div class="ctrl-form">
+        <div class="ctrl-field">
+          <label class="ctrl-lbl">Keywords / Product Type</label>
+          <input class="ctrl-input" id="resKeywords" placeholder="e.g. home decor organizer, minimalist lamp" />
+        </div>
+        <div class="ctrl-field">
+          <label class="ctrl-lbl">Category</label>
+          <input class="ctrl-input" id="resCategory" placeholder="e.g. Home & Living" />
+        </div>
+        <div class="ctrl-field">
+          <label class="ctrl-lbl">Max Cost (USD)</label>
+          <input class="ctrl-input" id="resMaxCost" placeholder="25" type="number" />
+        </div>
+        <button class="ctrl-btn" id="resSubmit">Run Research Agent Now</button>
+      </div>
+    </div>`;
 
   const qi = Math.min(S.qi.candidates||0, items.length-1);
   return `
     <div class="stage-info">Review one product at a time. <strong>Add to Pipeline</strong> to move it to pricing. <strong>Skip</strong> to remove it.</div>
     ${queueHeader('Research candidates', qi, items.length, 'candidates')}
-    ${productCard(items[qi], 1)}`;
+    ${productCard(items[qi], 1)}
+    <div class="panel" style="margin-top:12px">
+      <div class="pnl-title">Request Specific Research</div>
+      <div class="ctrl-form">
+        <input class="ctrl-input" id="resKeywords" placeholder="Keywords / product type (e.g. home decor organizer)" style="flex:1" />
+        <button class="ctrl-btn" id="resSubmit">Run Research Agent</button>
+      </div>
+    </div>`;
 }
 
 // ── MODULE: Content (Stage 3) ─────────────────────────────────
@@ -518,15 +544,16 @@ async function products() {
     ${kpi('Live on Store', shopify.filter(p=>p.status==='active').length, 'visible to customers', 'green')}
   </div>
   ${shopify.length ? `<div class="panel">
-    <div class="pnl-title">Shopify Store — Active Products</div>
+    <div class="pnl-title">Shopify Store — Edit Prices Live</div>
     <div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Title</th><th>Type</th><th>Price</th><th>Inventory</th><th>Status</th></tr></thead>
+      <thead><tr><th>Title</th><th>Type</th><th>Price (CAD)</th><th>Inventory</th><th>Status</th><th></th></tr></thead>
       <tbody>${shopify.map(p=>`<tr>
         <td class="tc1">${p.title}</td>
         <td class="tc-m">${p.type||'—'}</td>
-        <td class="tc-g">$${Number(p.price).toFixed(2)}</td>
+        <td><input class="price-input" data-pid="${p.id}" value="${Number(p.price).toFixed(2)}" /></td>
         <td>${p.inventory??0}</td>
         <td>${pill(p.status)}</td>
+        <td><button class="price-save" data-pid="${p.id}">Save</button></td>
       </tr>`).join('')}</tbody>
     </table></div>
   </div>` : ''}
@@ -622,30 +649,58 @@ async function commander() {
     </div>`;
 }
 
-// ── MODULE: Agents ─────────────────────────────────────────────
+// ── MODULE: Agents (with controls) ────────────────────────────
 async function agents() {
-  const all = await api('/api/agents');
+  const [all, setts] = await Promise.all([api('/api/agents'), api('/api/settings')]);
   const seen=new Set(), list=(all||[]).filter(a=>{
     const nm=a.payload?.agent||a.agent_id; if(seen.has(nm))return false; seen.add(nm); return true;
   });
   const ok  = list.filter(a=>!a.payload?.errors).length;
   const err = list.filter(a=> a.payload?.errors).length;
+  const enabledMap = {};
+  setts.filter(s=>s.key.startsWith('agents.')).forEach(s=>{ enabledMap[s.key]=s.value==='true'; });
+
+  const AGENT_DEFS = [
+    {key:'research', name:'Research Agent',  desc:'Finds new products on CJ Dropshipping'},
+    {key:'pricing',  name:'Pricing Agent',   desc:'Sets prices based on cost + markup rules'},
+    {key:'copy',     name:'Copy Agent',      desc:'Writes product descriptions and captions'},
+    {key:'ads',      name:'Ads Agent',       desc:'Creates Facebook/Instagram ad briefs'},
+    {key:'cs',       name:'CS Agent',        desc:'Monitors orders, returns, and CS flags'},
+  ];
+
+  const agentControls = AGENT_DEFS.map(a => {
+    const enabled = enabledMap[`agents.${a.key}_enabled`] !== false;
+    const log = list.find(l=>(l.payload?.agent||'').toLowerCase().includes(a.key.slice(0,4)));
+    return `<div class="agent-ctrl-row">
+      <div class="agent-dot ${enabled?(log?.payload?.errors?'err':'ok'):'off'}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--t1)">${a.name}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">${a.desc}</div>
+        ${log?`<div style="font-size:10.5px;color:var(--t4);margin-top:3px">${(log.payload?.exec_summary||'').slice(0,90)} · ${timeAgo(log.ts||log.created_at)}</div>`:''}
+      </div>
+      <label class="toggle">
+        <input type="checkbox" class="agent-toggle" data-agent="${a.key}" ${enabled?'checked':''}>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      </label>
+    </div>`;
+  }).join('');
 
   return `
   <div class="kpi-row kpi-row-3">
-    ${kpi('Active Agents', list.length, 'running 24/7', 'green')}
-    ${kpi('Healthy',       ok,          'no errors',    'green')}
-    ${kpi('Errors',        err,         'need attention',err>0?'red':'green')}
+    ${kpi('Agents', AGENT_DEFS.length, 'configured', 'blue')}
+    ${kpi('Healthy', ok, 'no errors', 'green')}
+    ${kpi('Errors', err, 'need attention', err>0?'red':'green')}
   </div>
   <div class="panel">
-    <div class="pnl-title">All Agents — Last Run</div>
+    <div class="pnl-title">Agent Controls — Toggle On / Off</div>
+    ${agentControls}
+  </div>
+  <div class="panel">
+    <div class="pnl-title">Recent Activity</div>
     <table class="tbl">
-      <thead><tr><th>Agent</th><th>Last Summary</th><th>Last Run</th></tr></thead>
-      <tbody>${list.map(a=>`<tr>
-        <td><div style="display:flex;align-items:center;gap:8px">
-          <div class="agent-dot ${a.payload?.errors?'err':'ok'}"></div>
-          <strong style="color:var(--t1)">${a.payload?.agent||a.agent_id||'—'}</strong>
-        </div></td>
+      <thead><tr><th>Agent</th><th>Last Summary</th><th>When</th></tr></thead>
+      <tbody>${list.slice(0,10).map(a=>`<tr>
+        <td><div style="display:flex;align-items:center;gap:8px"><div class="agent-dot ${a.payload?.errors?'err':'ok'}"></div><strong style="color:var(--t1)">${a.payload?.agent||a.agent_id||'—'}</strong></div></td>
         <td class="tc-m" style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(a.payload?.exec_summary||'—').slice(0,100)}</td>
         <td class="tc-m">${timeAgo(a.ts||a.created_at)}</td>
       </tr>`).join('')}</tbody>
@@ -653,36 +708,52 @@ async function agents() {
   </div>`;
 }
 
-// ── MODULE: Settings ──────────────────────────────────────────
+// ── MODULE: Settings (fully editable) ────────────────────────
 async function settings() {
-  const [kpis, shopProds] = await Promise.all([
+  const [setts, kpis, shopProds] = await Promise.all([
+    api('/api/settings'),
     api('/api/shopify/kpis').catch(()=>null),
     api('/api/shopify/products').catch(()=>null),
   ]);
+
   const shopOk = Array.isArray(shopProds);
+  const byGroup = {};
+  setts.forEach(s => { if (!byGroup[s.group_name]) byGroup[s.group_name] = []; byGroup[s.group_name].push(s); });
+
+  const editRow = s => {
+    const isBool = s.value === 'true' || s.value === 'false';
+    if (isBool) return `
+      <div class="set-row" data-key="${s.key}">
+        <span class="set-k">${s.label}</span>
+        <div style="flex:1"></div>
+        <label class="toggle">
+          <input type="checkbox" class="toggle-cb" data-key="${s.key}" ${s.value==='true'?'checked':''}>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>`;
+    return `
+      <div class="set-row" data-key="${s.key}">
+        <span class="set-k">${s.label}</span>
+        <input class="set-input" data-key="${s.key}" value="${s.value}" />
+        <button class="set-save" data-key="${s.key}">Save</button>
+      </div>`;
+  };
+
+  const groups = Object.entries(byGroup).map(([grp, rows]) => `
+    <div class="panel">
+      <div class="pnl-title">${grp} Settings</div>
+      ${rows.map(editRow).join('')}
+    </div>`).join('');
 
   return `
   <div class="panel">
-    <div class="pnl-title">Shopify Store · Connection</div>
-    <div class="set-row"><span class="set-k">Store URL</span><span class="set-v">lumera-aura.myshopify.com</span><span class="${shopOk?'set-ok':'set-err'}">${shopOk?'● Connected':'● Error'}</span></div>
-    <div class="set-row"><span class="set-k">API Version</span><span class="set-v">2024-10</span><span class="set-ok">Active</span></div>
-    <div class="set-row"><span class="set-k">Products in Store</span><span class="set-v">${kpis?.shopifyProductCount??'—'} products</span></div>
-    <div class="set-row"><span class="set-k">Total Orders</span><span class="set-v">${kpis?.totalOrdersEver??'—'} orders all-time</span></div>
-    <div class="set-row"><span class="set-k">Admin Token</span><span class="set-v" style="color:var(--t3)">Stored in .env · never in git</span><span class="set-ok">Secure</span></div>
+    <div class="pnl-title">Connections</div>
+    <div class="set-row"><span class="set-k">Shopify</span><span class="set-v">lumera-aura.myshopify.com</span><span class="${shopOk?'set-ok':'set-err'}">${shopOk?'● Connected':'● Error'}</span></div>
+    <div class="set-row"><span class="set-k">Products in Store</span><span class="set-v">${kpis?.shopifyProductCount??'—'}</span></div>
+    <div class="set-row"><span class="set-k">Supabase</span><span class="set-v">qjclbnbzntdxfjuomdwr.supabase.co</span><span class="set-ok">● Connected</span></div>
+    <div class="set-row"><span class="set-k">n8n Agents</span><span class="set-v">clariva-n8n.onrender.com</span><span class="set-ok">● Running</span></div>
   </div>
-  <div class="panel">
-    <div class="pnl-title">Supabase Database</div>
-    <div class="set-row"><span class="set-k">Project</span><span class="set-v">qjclbnbzntdxfjuomdwr.supabase.co</span><span class="set-ok">● Connected</span></div>
-    <div class="set-row"><span class="set-k">Region</span><span class="set-v">ca-central-1 (Canada)</span></div>
-  </div>
-  <div class="panel">
-    <div class="pnl-title">Pending Setup Tasks</div>
-    <div class="set-row"><span class="set-k">Store Domain</span><span class="set-v">Rename lumera-aura → Clariva Home</span><span class="set-warn">● Pending</span></div>
-    <div class="set-row"><span class="set-k">Klaviyo</span><span class="set-v">Email Agent ready — Klaviyo not connected yet</span><span class="set-warn">● Pending</span></div>
-    <div class="set-row"><span class="set-k">Research Keywords</span><span class="set-v">Rotate from "jewelry watch" → "home decor organizer"</span><span class="set-warn">● Pending</span></div>
-    <div class="set-row"><span class="set-k">Hero Image</span><span class="set-v">Upload in Shopify Customizer</span><span class="set-warn">● Pending</span></div>
-    <div class="set-row"><span class="set-k">UptimeRobot</span><span class="set-v">Update monitor URL → clariva-n8n.onrender.com/healthz</span><span class="set-warn">● Pending</span></div>
-  </div>`;
+  ${groups}`;
 }
 
 // ── Button bindings ───────────────────────────────────────────
@@ -724,6 +795,63 @@ function bind() {
         S.expanded = null; renderPage();
       } catch { btn.disabled = false; btn.textContent = 'Retry'; }
     });
+  });
+
+  // Settings: save a value
+  document.querySelectorAll('.set-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const key = btn.dataset.key;
+      const inp = document.querySelector(`.set-input[data-key="${key}"]`);
+      if (!inp) return;
+      btn.disabled = true; btn.textContent = '…';
+      await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key, value: inp.value }) });
+      btn.textContent = '✓'; setTimeout(()=>{ btn.textContent='Save'; btn.disabled=false; }, 1500);
+    });
+  });
+
+  // Settings: toggle boolean
+  document.querySelectorAll('.toggle-cb').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key: cb.dataset.key, value: cb.checked ? 'true' : 'false' }) });
+    });
+  });
+
+  // Agents: toggle on/off
+  document.querySelectorAll('.agent-toggle').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      await fetch(`/api/agents/${cb.dataset.agent}/${cb.checked?'enable':'disable'}`, { method:'POST' });
+    });
+  });
+
+  // Price editing in Products
+  document.querySelectorAll('.price-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const pid = btn.dataset.pid;
+      const inp = document.querySelector(`.price-input[data-pid="${pid}"]`);
+      if (!inp) return;
+      btn.disabled = true; btn.textContent = '…';
+      const r = await fetch(`/api/shopify/products/${pid}/price`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ price: inp.value }) });
+      btn.textContent = r.ok ? '✓ Saved' : '✗ Error';
+      setTimeout(()=>{ btn.textContent='Save'; btn.disabled=false; }, 2000);
+    });
+  });
+  document.querySelectorAll('.price-input').forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.querySelector(`.price-save[data-pid="${inp.dataset.pid}"]`)?.click();
+    });
+  });
+
+  // Research on demand
+  document.getElementById('resSubmit')?.addEventListener('click', async () => {
+    const btn = document.getElementById('resSubmit');
+    const keywords = document.getElementById('resKeywords')?.value.trim();
+    const category = document.getElementById('resCategory')?.value.trim();
+    const maxCost  = document.getElementById('resMaxCost')?.value.trim();
+    if (!keywords) { document.getElementById('resKeywords')?.focus(); return; }
+    btn.disabled = true; btn.textContent = 'Queuing…';
+    await fetch('/api/trigger/research', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ keywords, category, max_cost: maxCost }) });
+    btn.textContent = '✓ Research queued — check Commander for status';
+    setTimeout(() => go('commander'), 2000);
   });
 
   // Commander send
