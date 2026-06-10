@@ -24,6 +24,7 @@ const SUPA_KEY    = env.SUPABASE_SERVICE_KEY;
 const SUPA_HOST   = 'qjclbnbzntdxfjuomdwr.supabase.co';
 const SHOP_DOMAIN = (env.SHOPIFY_STORE || '').replace('https://', '').replace(/\/$/, '');
 const SHOP_TOKEN  = env.SHOPIFY_ADMIN_TOKEN || '';
+const OPENAI_KEY  = env.OPENAI_API_KEY || '';
 
 // ── Shopify helper ─────────────────────────────────────────────────────
 function shopify(restPath) {
@@ -102,6 +103,103 @@ function staticFile(res, filePath) {
     res.writeHead(200, { 'Content-Type': mime });
     res.end(data);
   });
+}
+
+// ── Commander AI ────────────────────────────────────────────────────────
+async function classifyCommand(message) {
+  if (!OPENAI_KEY) return { intent: 'general', params: {}, response: 'Command saved. Agents will pick it up.' };
+  return new Promise(resolve => {
+    const system = `You are a command router for Clariva Home dropshipping business OS. Parse the owner instruction and return ONLY valid JSON:
+{"intent":"research|niche_change|price_update|agent_toggle|setting_change|design|general","params":{"keywords":"string","niche":"string","max_cost":25,"category":"string","agent":"research|pricing|copy|ads|cs","action":"enable|disable","setting_key":"string","setting_value":"string","design_request":"string"},"response":"1-sentence friendly confirmation of what will be done"}
+Intents: research=find new products with keywords, niche_change=switch entire product category (clears pipeline), price_update=change pricing rules, agent_toggle=enable or disable an agent, setting_change=change a business setting, design=change store look/theme/images, general=anything else.`;
+    const body = JSON.stringify({ model: 'gpt-4o-mini', temperature: 0, response_format: { type: 'json_object' },
+      messages: [{ role: 'system', content: system }, { role: 'user', content: message }] });
+    const req = https.request({
+      hostname: 'api.openai.com', path: '/v1/chat/completions', method: 'POST', timeout: 15000,
+      headers: { Authorization: 'Bearer ' + OPENAI_KEY, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+    }, r => { let d = ''; r.on('data', c => d += c); r.on('end', () => {
+      try { resolve(JSON.parse(JSON.parse(d).choices[0].message.content)); }
+      catch { resolve({ intent: 'general', params: {}, response: 'Command saved.' }); }
+    }); });
+    req.on('error', () => resolve({ intent: 'general', params: {}, response: 'Command saved.' }));
+    req.on('timeout', () => { req.destroy(); resolve({ intent: 'general', params: {}, response: 'Command saved (AI timeout).' }); });
+    req.write(body); req.end();
+  });
+}
+
+async function processCommand(cmdId, message) {
+  if (!cmdId) return;
+  try {
+    await supa(`/user_commands?id=eq.${encodeURIComponent(cmdId)}`, 'PATCH', { status: 'running' });
+    const intent = await classifyCommand(message);
+    let result = intent.response || 'Command received.';
+    let agentName = 'Commander';
+
+    if (intent.intent === 'niche_change') {
+      agentName = 'Research Agent';
+      const niche = intent.params?.niche || intent.params?.keywords || message;
+      const kw    = intent.params?.keywords || niche;
+      // Update research settings, clear candidates + pending research decisions, queue fresh research
+      await Promise.all([
+        supa('/business_settings?key=eq.research.keywords', 'PATCH', { value: kw, updated_at: new Date().toISOString() }),
+        supa('/business_settings?key=eq.research.category', 'PATCH', { value: niche, updated_at: new Date().toISOString() }),
+      ]);
+      await Promise.all([
+        supa('/products?status=eq.candidate', 'DELETE'),
+        supa('/decisions?state=eq.pending&type=in.(research,product)', 'DELETE'),
+      ]);
+      await supa('/user_commands', 'POST', { message: `Run research for new niche: ${niche}. Keywords: ${kw}`, status: 'pending', agent: 'Research Agent' });
+      result = `Niche changed to "${niche}". Pipeline cleared. Research Agent queued — new candidates will appear when done.`;
+    }
+
+    if (intent.intent === 'research') {
+      agentName = 'Research Agent';
+      const kw = intent.params?.keywords;
+      if (kw) await supa('/business_settings?key=eq.research.keywords', 'PATCH', { value: kw, updated_at: new Date().toISOString() });
+      result = `Research queued for "${kw || 'current keywords'}". New candidates will appear in Candidates when complete.`;
+    }
+
+    if (intent.intent === 'agent_toggle' && intent.params?.agent) {
+      agentName = 'Settings';
+      const val = intent.params.action === 'enable' ? 'true' : 'false';
+      await supa(`/business_settings?key=eq.agents.${intent.params.agent}_enabled`, 'PATCH', { value: val, updated_at: new Date().toISOString() });
+      result = `${intent.params.agent} Agent ${intent.params.action}d successfully.`;
+    }
+
+    if (intent.intent === 'setting_change' && intent.params?.setting_key) {
+      agentName = 'Settings';
+      await supa(`/business_settings?key=eq.${intent.params.setting_key}`, 'PATCH', { value: String(intent.params.setting_value ?? ''), updated_at: new Date().toISOString() });
+      result = `Setting "${intent.params.setting_key}" updated to "${intent.params.setting_value}".`;
+    }
+
+    if (intent.intent === 'price_update') {
+      agentName = 'Pricing Agent';
+      if (intent.params?.setting_key && intent.params?.setting_value !== undefined) {
+        await supa(`/business_settings?key=eq.${intent.params.setting_key}`, 'PATCH', { value: String(intent.params.setting_value), updated_at: new Date().toISOString() });
+      }
+      result = intent.response || 'Pricing rule updated.';
+    }
+
+    if (intent.intent === 'design') {
+      agentName = 'Design Agent';
+      // Queue as a decision so owner can review + approve the design change
+      await supa('/decisions', 'POST', {
+        type: 'design', state: 'pending',
+        title: 'Design Request: ' + message.slice(0, 80),
+        description: message,
+        payload: JSON.stringify({ request: message, design_prompt: intent.params?.design_request || message, source: 'commander' }),
+        created_at: new Date().toISOString()
+      });
+      result = `Design request queued for review in Candidates. Approve it to apply the changes.`;
+    }
+
+    await supa(`/user_commands?id=eq.${encodeURIComponent(cmdId)}`, 'PATCH',
+      { status: 'done', agent: agentName, result, updated_at: new Date().toISOString() });
+  } catch(e) {
+    console.error('Commander error:', e.message);
+    try { await supa(`/user_commands?id=eq.${encodeURIComponent(cmdId)}`, 'PATCH',
+      { status: 'failed', result: 'Error: ' + e.message, updated_at: new Date().toISOString() }); } catch {}
+  }
 }
 
 // ── Route table ────────────────────────────────────────────────────────
@@ -475,7 +573,10 @@ const server = http.createServer(async (req, res) => {
       const { message } = JSON.parse(body || '{}');
       if (!message || !message.trim()) { json(res, 400, { error: 'message required' }); return; }
       const r = await supa('/user_commands', 'POST', { message: message.trim(), status: 'pending' });
-      json(res, 200, { ok: true, id: Array.isArray(r.data) ? r.data[0]?.id : null });
+      const cmdId = Array.isArray(r.data) ? r.data[0]?.id : null;
+      json(res, 200, { ok: true, id: cmdId });
+      // Process async — classify intent with GPT-4o-mini and execute action
+      processCommand(cmdId, message.trim()).catch(e => console.error('processCommand:', e.message));
       return;
     }
 
