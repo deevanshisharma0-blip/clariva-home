@@ -1,0 +1,459 @@
+/**
+ * Clariva Home OS — local dashboard server
+ * Run: node server.js
+ * Open: http://localhost:3847
+ * Reads secrets from ../env (never touches VCS)
+ */
+const http  = require('http');
+const https = require('https');
+const fs    = require('fs');
+const path  = require('path');
+const url   = require('url');
+
+// ── Secrets — reads .env file locally, falls back to process.env on cloud ──
+const env = Object.assign({}, process.env);
+const envPath = path.join(__dirname, '..', '.env');
+try {
+  fs.readFileSync(envPath, 'utf8').split('\n').forEach(l => {
+    const m = l.match(/^([A-Z0-9_]+)=(.+)$/);
+    if (m) env[m[1]] = m[2].trim();
+  });
+} catch { /* no .env file — using process.env (cloud deployment) */ }
+
+const SUPA_KEY    = env.SUPABASE_SERVICE_KEY;
+const SUPA_HOST   = 'qjclbnbzntdxfjuomdwr.supabase.co';
+const SHOP_DOMAIN = (env.SHOPIFY_STORE || '').replace('https://', '').replace(/\/$/, '');
+const SHOP_TOKEN  = env.SHOPIFY_ADMIN_TOKEN || '';
+
+// ── Shopify helper ─────────────────────────────────────────────────────
+function shopify(restPath) {
+  return new Promise(resolve => {
+    if (!SHOP_DOMAIN || !SHOP_TOKEN) { resolve({}); return; }
+    const req = https.request({
+      hostname: SHOP_DOMAIN,
+      path:     restPath,
+      method:   'GET',
+      timeout:  18000,
+      headers:  { 'X-Shopify-Access-Token': SHOP_TOKEN, 'Content-Type': 'application/json' }
+    }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d || '{}')); } catch { resolve({}); } });
+    });
+    req.on('error', err => { console.error('Shopify:', err.message); resolve({}); });
+    req.on('timeout', () => { req.destroy(); resolve({}); });
+    req.end();
+  });
+}
+
+// ── Supabase helper ────────────────────────────────────────────────────
+function supa(restPath, method = 'GET', body = null, extra = {}) {
+  return new Promise((resolve, reject) => {
+    const data = body ? JSON.stringify(body) : null;
+    const req  = https.request({
+      hostname: SUPA_HOST,
+      path:     '/rest/v1' + restPath,
+      method,
+      timeout:  12000,
+      headers: {
+        apikey:          SUPA_KEY,
+        Authorization:   'Bearer ' + SUPA_KEY,
+        'Content-Type':  'application/json',
+        Prefer:          'return=representation',
+        ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}),
+        ...extra
+      }
+    }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        try   { resolve({ status: res.statusCode, data: JSON.parse(d || '[]') }); }
+        catch { resolve({ status: res.statusCode, data: [] }); }
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+// ── Response helpers ───────────────────────────────────────────────────
+function json(res, status, data) {
+  const body = JSON.stringify(data);
+  res.writeHead(status, {
+    'Content-Type':                'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control':               'no-cache'
+  });
+  res.end(body);
+}
+
+function staticFile(res, filePath) {
+  const mime = {
+    '.html': 'text/html; charset=utf-8',
+    '.css':  'text/css',
+    '.js':   'application/javascript',
+    '.ico':  'image/x-icon',
+    '.png':  'image/png'
+  }[path.extname(filePath)] || 'text/plain';
+  fs.readFile(filePath, (err, data) => {
+    if (err) { res.writeHead(404); res.end('Not found'); return; }
+    res.writeHead(200, { 'Content-Type': mime });
+    res.end(data);
+  });
+}
+
+// ── Route table ────────────────────────────────────────────────────────
+const server = http.createServer(async (req, res) => {
+  const { pathname } = url.parse(req.url);
+
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST', 'Access-Control-Allow-Headers': 'Content-Type' });
+    res.end(); return;
+  }
+
+  try {
+    // ── API ──────────────────────────────────────────────────────────
+
+    // Stats (dashboard aggregate)
+    if (pathname === '/api/stats') {
+      const [dec, prod, health, alerts] = await Promise.all([
+        supa('/decisions?state=eq.pending&limit=200'),
+        supa('/products?limit=200'),
+        supa('/business_health_scores?order=scored_at.desc&limit=1'),
+        supa('/decisions?type=eq.alert&ref_table=eq.orders&state=eq.pending&limit=50')
+      ]);
+      const D = Array.isArray(dec.data)    ? dec.data    : [];
+      const P = Array.isArray(prod.data)   ? prod.data   : [];
+      const H = Array.isArray(health.data) ? health.data[0] : null;
+      const A = Array.isArray(alerts.data) ? alerts.data : [];
+      json(res, 200, {
+        pendingDecisions: D.length,
+        pendingAlerts:    A.length,
+        totalProducts:    P.length,
+        draftProducts:    P.filter(p => p.status === 'draft').length,
+        approvedProducts: P.filter(p => p.status === 'approved').length,
+        candidateProducts:P.filter(p => p.status === 'candidate').length,
+        healthScore:      H?.overall_score ?? null,
+        healthColor:      H?.color         ?? null,
+        healthNotes:      H?.notes         ?? null,
+        scalingEnabled:   H?.scaling_enabled ?? false,
+      });
+      return;
+    }
+
+    // Decisions list — enriched with referenced entity
+    if (pathname === '/api/decisions' && req.method === 'GET') {
+      const r = await supa('/decisions?state=eq.pending&order=created_at.desc&limit=100');
+      const decisions = Array.isArray(r.data) ? r.data : [];
+      // Enrich each decision with the referenced entity record
+      const enriched = await Promise.all(decisions.map(async d => {
+        if (d.ref_table && d.ref_id) {
+          const ref = await supa(`/${d.ref_table}?id=eq.${encodeURIComponent(d.ref_id)}&limit=1`).catch(() => ({ data: [] }));
+          return { ...d, _entity: Array.isArray(ref.data) && ref.data[0] ? ref.data[0] : null };
+        }
+        return { ...d, _entity: null };
+      }));
+      json(res, 200, enriched);
+      return;
+    }
+
+    // Approve / Reject a decision
+    const actionMatch = pathname.match(/^\/api\/decisions\/([^/]+)\/(approve|reject)$/);
+    if (actionMatch && req.method === 'POST') {
+      const [, id, action] = actionMatch;
+      const newState = action === 'approve' ? 'approved' : 'rejected';
+      await supa(`/decisions?id=eq.${encodeURIComponent(id)}`, 'PATCH', { state: newState });
+      json(res, 200, { ok: true, id, state: newState });
+      return;
+    }
+
+    // Products
+    if (pathname === '/api/products') {
+      const r = await supa('/products?select=id,title,category,status,copy_status,content_status,ads_status,shopify_gid,created_at&order=created_at.asc&limit=200');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
+      return;
+    }
+
+    // Finance (last 30 days)
+    if (pathname === '/api/finance') {
+      const r = await supa('/metrics_daily?order=date.desc&limit=30');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
+      return;
+    }
+
+    // Agent logs (recent exec_summaries)
+    if (pathname === '/api/agents') {
+      const r = await supa('/agent_logs?event=eq.exec_summary&order=ts.desc&limit=60');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
+      return;
+    }
+
+    // Business health score
+    if (pathname === '/api/health') {
+      const r = await supa('/business_health_scores?order=scored_at.desc&limit=5');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
+      return;
+    }
+
+    // CS alerts
+    if (pathname === '/api/alerts') {
+      const r = await supa('/decisions?type=eq.alert&ref_table=eq.orders&state=eq.pending&order=created_at.desc&limit=30');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
+      return;
+    }
+
+    // Recent orders
+    if (pathname === '/api/orders') {
+      const r = await supa('/orders?select=id,shopify_order_gid,total,currency,financial_status,fulfillment_status,placed_at&order=placed_at.desc&limit=20');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
+      return;
+    }
+
+    // ── Shopify live KPIs ─────────────────────────────────────────────
+    if (pathname === '/api/shopify/kpis') {
+      const ago30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0,10);
+      const ago7  = new Date(Date.now() -  7 * 86400000).toISOString().slice(0,10);
+      const [data30, data7, prodData, countData] = await Promise.all([
+        shopify(`/admin/api/2024-10/orders.json?status=any&limit=250&created_at_min=${ago30}&fields=id,created_at,total_price,subtotal_price,total_discounts,financial_status,fulfillment_status,line_items,refunds`),
+        shopify(`/admin/api/2024-10/orders.json?status=any&limit=50&created_at_min=${ago7}&fields=id,financial_status,total_price`),
+        shopify('/admin/api/2024-10/products/count.json'),
+        shopify('/admin/api/2024-10/orders/count.json?status=any'),
+      ]);
+
+      const all30   = data30.orders || [];
+      const paid30  = all30.filter(o => ['paid','partially_paid'].includes(o.financial_status));
+      const revenue = paid30.reduce((s,o) => s + parseFloat(o.total_price||0), 0);
+      const orders7 = (data7.orders||[]).filter(o => ['paid','partially_paid'].includes(o.financial_status));
+      const rev7    = orders7.reduce((s,o) => s + parseFloat(o.total_price||0), 0);
+      const aov     = paid30.length ? revenue / paid30.length : 0;
+      const refunded= all30.filter(o => o.refunds && o.refunds.length > 0).length;
+      const fulfilled= all30.filter(o => o.fulfillment_status === 'fulfilled').length;
+      const pending = all30.filter(o => !o.fulfillment_status || o.fulfillment_status === 'unfulfilled').length;
+
+      // Product-level revenue (last 30d)
+      const prodMap = {};
+      paid30.forEach(o => (o.line_items||[]).forEach(li => {
+        const k = String(li.product_id || li.title);
+        if (!prodMap[k]) prodMap[k] = { id: k, title: li.title, revenue: 0, units: 0 };
+        prodMap[k].revenue += parseFloat(li.price||0) * (li.quantity||1);
+        prodMap[k].units   += (li.quantity||1);
+      }));
+      const topProducts = Object.values(prodMap).sort((a,b) => b.revenue - a.revenue).slice(0,10);
+
+      // Daily breakdown (last 30d)
+      const dayMap = {};
+      paid30.forEach(o => {
+        const d = o.created_at.slice(0,10);
+        if (!dayMap[d]) dayMap[d] = { date: d, revenue: 0, orders: 0 };
+        dayMap[d].revenue += parseFloat(o.total_price||0);
+        dayMap[d].orders  += 1;
+      });
+      const daily = Object.values(dayMap).sort((a,b) => a.date.localeCompare(b.date));
+
+      json(res, 200, {
+        revenue, orders: paid30.length, aov, rev7, orders7: orders7.length,
+        refundRate:  all30.length  ? (refunded  / all30.length)*100 : 0,
+        fulfillRate: all30.length  ? (fulfilled / all30.length)*100 : 0,
+        pendingOrders: pending,
+        shopifyProductCount: prodData.count || 0,
+        totalOrdersEver: countData.count || 0,
+        topProducts, daily,
+      });
+      return;
+    }
+
+    // ── Shopify live product list ─────────────────────────────────────
+    if (pathname === '/api/shopify/products') {
+      const data = await shopify('/admin/api/2024-10/products.json?limit=50&status=active&fields=id,title,status,variants,product_type,created_at,published_at');
+      const products = (data.products || []).map(p => ({
+        id: p.id, title: p.title, status: p.status, type: p.product_type,
+        price: p.variants?.[0]?.price || 0,
+        inventory: (p.variants||[]).reduce((s,v) => s + (v.inventory_quantity||0), 0),
+        created_at: p.created_at, published_at: p.published_at,
+      }));
+      json(res, 200, products);
+      return;
+    }
+
+    // ── Shopify recent orders (full) ──────────────────────────────────
+    if (pathname === '/api/shopify/orders') {
+      const data = await shopify('/admin/api/2024-10/orders.json?status=any&limit=30&fields=id,name,created_at,total_price,financial_status,fulfillment_status,customer,line_items,refunds');
+      json(res, 200, data.orders || []);
+      return;
+    }
+
+    // ── Full business report (Supabase + Shopify) ─────────────────────
+    if (pathname === '/api/report') {
+      const ago30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0,10);
+      const [decPending, decHandled, products, finance, agentLogs, healthHistory, orders, shopKpis] = await Promise.all([
+        supa('/decisions?state=eq.pending&order=created_at.desc&limit=200'),
+        supa('/decisions?state=in.(approved,rejected)&order=created_at.desc&limit=50'),
+        supa('/products?order=created_at.asc&limit=200'),
+        supa('/metrics_daily?order=date.desc&limit=30'),
+        supa('/agent_logs?event=eq.exec_summary&order=ts.desc&limit=80'),
+        supa('/business_health_scores?order=scored_at.desc&limit=10'),
+        supa('/orders?order=placed_at.desc&limit=50'),
+        shopify(`/admin/api/2024-10/orders.json?status=any&limit=250&created_at_min=${ago30}&fields=id,created_at,total_price,financial_status,fulfillment_status,line_items,refunds`),
+      ]);
+
+      const P  = Array.isArray(products.data)     ? products.data     : [];
+      const F  = Array.isArray(finance.data)       ? finance.data      : [];
+      const AL = Array.isArray(agentLogs.data)     ? agentLogs.data    : [];
+      const HH = Array.isArray(healthHistory.data) ? healthHistory.data: [];
+      const DP = Array.isArray(decPending.data)    ? decPending.data   : [];
+      const DH = Array.isArray(decHandled.data)    ? decHandled.data   : [];
+      const OR = Array.isArray(orders.data)        ? orders.data       : [];
+      const shopOrders = shopKpis.orders || [];
+      const shopPaid   = shopOrders.filter(o => ['paid','partially_paid'].includes(o.financial_status));
+
+      // Agent map by payload.agent name
+      const agentMap = {};
+      AL.forEach(l => {
+        const nm = (l.payload && l.payload.agent) ? l.payload.agent : l.agent_id;
+        if (nm && !agentMap[nm]) agentMap[nm] = l;
+      });
+
+      // Finance totals (Supabase metrics_daily)
+      const totalRevenue  = F.reduce((s,r) => s+(r.revenue||0), 0);
+      const totalOrders   = F.reduce((s,r) => s+(r.orders||0),  0);
+      const totalAdSpend  = F.reduce((s,r) => s+(r.ad_spend||0),0);
+      const avgMargin     = F.length ? F.reduce((s,r)=>s+(r.margin||0),0)/F.length : 0;
+      const roas          = totalAdSpend > 0 ? totalRevenue / totalAdSpend : 0;
+
+      // Shopify-sourced KPIs
+      const shopRevenue = shopPaid.reduce((s,o) => s+parseFloat(o.total_price||0), 0);
+      const shopAOV     = shopPaid.length ? shopRevenue / shopPaid.length : 0;
+      const shopRefund  = shopOrders.filter(o=>o.refunds&&o.refunds.length>0).length;
+      const shopFulfill = shopOrders.filter(o=>o.fulfillment_status==='fulfilled').length;
+      const shopPending = shopOrders.filter(o=>!o.fulfillment_status||o.fulfillment_status==='unfulfilled').length;
+
+      // Top products from Shopify orders
+      const prodMap = {};
+      shopPaid.forEach(o => (o.line_items||[]).forEach(li => {
+        const k = String(li.product_id || li.title);
+        if (!prodMap[k]) prodMap[k] = { id: k, title: li.title, revenue: 0, units: 0 };
+        prodMap[k].revenue += parseFloat(li.price||0)*(li.quantity||1);
+        prodMap[k].units   += (li.quantity||1);
+      }));
+      const topProducts = Object.values(prodMap).sort((a,b)=>b.revenue-a.revenue).slice(0,10);
+
+      // Daily Shopify breakdown
+      const dayMap = {};
+      shopPaid.forEach(o => {
+        const d = o.created_at.slice(0,10);
+        if (!dayMap[d]) dayMap[d] = { date:d, revenue:0, orders:0 };
+        dayMap[d].revenue += parseFloat(o.total_price||0);
+        dayMap[d].orders  += 1;
+      });
+      const shopDaily = Object.values(dayMap).sort((a,b)=>a.date.localeCompare(b.date));
+
+      // Decision approval stats
+      const approvedCount  = DH.filter(d=>d.state==='approved').length;
+      const rejectedCount  = DH.filter(d=>d.state==='rejected').length;
+      const approvalRate   = DH.length ? (approvedCount/DH.length)*100 : 0;
+
+      json(res, 200, {
+        generatedAt: new Date().toISOString(),
+        health: HH[0] || null, healthHistory: HH,
+        decisions: {
+          pending: DP, handled: DH,
+          approvedCount, rejectedCount, approvalRate,
+        },
+        products: {
+          all: P,
+          candidate:   P.filter(p=>p.status==='candidate').length,
+          approved:    P.filter(p=>p.status==='approved').length,
+          draft:       P.filter(p=>p.status==='draft').length,
+          live:        P.filter(p=>p.status==='active'||p.status==='live').length,
+          copyDone:    P.filter(p=>p.copy_status==='done').length,
+          contentDone: P.filter(p=>p.content_status==='done').length,
+          adsDone:     P.filter(p=>p.ads_status==='done').length,
+        },
+        finance: { rows: F, totalRevenue, totalOrders, totalAdSpend, avgMargin, roas },
+        shopify: {
+          revenue: shopRevenue, orders: shopPaid.length,
+          aov: shopAOV, roas,
+          refundRate:  shopOrders.length ? (shopRefund /shopOrders.length)*100 : 0,
+          fulfillRate: shopOrders.length ? (shopFulfill/shopOrders.length)*100 : 0,
+          pendingOrders: shopPending, topProducts, daily: shopDaily,
+        },
+        agents: agentMap,
+        orders: OR,
+      });
+      return;
+    }
+
+    // ── Commander: read commands ──────────────────────────────────────
+    if (pathname === '/api/commands' && req.method === 'GET') {
+      const r = await supa('/user_commands?order=created_at.desc&limit=50');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
+      return;
+    }
+
+    // ── Commander: post a command ─────────────────────────────────────
+    if (pathname === '/api/commands' && req.method === 'POST') {
+      let body = '';
+      await new Promise(resolve => { req.on('data', c => body += c); req.on('end', resolve); });
+      const { message } = JSON.parse(body || '{}');
+      if (!message || !message.trim()) { json(res, 400, { error: 'message required' }); return; }
+      const r = await supa('/user_commands', 'POST', { message: message.trim(), status: 'pending' });
+      json(res, 200, { ok: true, id: Array.isArray(r.data) ? r.data[0]?.id : null });
+      return;
+    }
+
+    // ── Real-time SSE stream ──────────────────────────────────────────
+    if (pathname === '/api/stream') {
+      res.writeHead(200, {
+        'Content-Type':  'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection':    'keep-alive',
+        'X-Accel-Buffering': 'no',
+        'Access-Control-Allow-Origin': '*',
+      });
+      res.write(':ok\n\n');
+      const push = async () => {
+        try {
+          const [dec, health] = await Promise.all([
+            supa('/decisions?state=eq.pending&select=type,id&limit=500'),
+            supa('/business_health_scores?order=scored_at.desc&limit=1&select=overall_score,color'),
+          ]);
+          const D = Array.isArray(dec.data) ? dec.data : [];
+          const H = (Array.isArray(health.data) && health.data[0]) ? health.data[0] : null;
+          res.write(`data: ${JSON.stringify({
+            product: D.filter(d => ['product','research'].includes(d.type)).length,
+            content: D.filter(d => ['content','copy'].includes(d.type)).length,
+            ad:      D.filter(d => ['ad','ads','marketing','campaign'].includes(d.type)).length,
+            alert:   D.filter(d => d.type === 'alert').length,
+            order:   D.filter(d => d.type === 'order').length,
+            ret:     D.filter(d => ['return','refund','chargeback'].includes(d.type)).length,
+            total:   D.length, health: H, ts: Date.now(),
+          })}\n\n`);
+        } catch(e) { /* client disconnected */ }
+      };
+      await push();
+      const iv = setInterval(push, 8000);
+      req.on('close', () => clearInterval(iv));
+      return;
+    }
+
+    // ── Static files ─────────────────────────────────────────────────
+    const safePath = pathname === '/' ? '/index.html' : pathname;
+    staticFile(res, path.join(__dirname, 'public', safePath));
+
+  } catch (err) {
+    console.error('Server error:', err.message);
+    json(res, 500, { error: err.message });
+  }
+});
+
+const PORT = process.env.PORT || 3847;
+const HOST = process.env.PORT ? '0.0.0.0' : '127.0.0.1'; // 0.0.0.0 on Render, localhost only at home
+server.listen(PORT, HOST, () => {
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  Clariva Home OS');
+  console.log(`  http://${HOST}:${PORT}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+});

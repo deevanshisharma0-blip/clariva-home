@@ -1,0 +1,12 @@
+{
+  "name": "clariva-home-os",
+  "version": "1.0.0",
+  "description": "Clariva Home Business OS — local dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

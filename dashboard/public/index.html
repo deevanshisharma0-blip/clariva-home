@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clariva Home OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="#E8611A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 1L16 5v8l-7 4-7-4V5l7-4z"/>
+          <path d="M1 5l8 4.5L17 5"/>
+          <path d="M9 9.5V17"/>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">Clariva Home</span>
+          <span class="brand-sub">Business OS</span>
+        </div>
+      </div>
+      <div id="liveDot" class="live-dot"></div>
+    </div>
+    <nav id="nav"></nav>
+    <div id="sideHealth" class="side-health"></div>
+  </aside>
+
+  <div id="app">
+    <header id="topbar">
+      <div class="tb-left">
+        <span id="tbTitle" class="tb-title">Overview</span>
+        <span id="tbSub"   class="tb-sub"></span>
+      </div>
+      <div class="tb-right">
+        <span id="tbUpdated" class="tb-updated"></span>
+        <button id="tbRefresh" class="tb-btn">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+            <path d="M12 7A5 5 0 112 3.5"/><path d="M12 2v2.5H9.5"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </header>
+    <main id="main">
+      <div class="splash">Connecting to Clariva Home…</div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
