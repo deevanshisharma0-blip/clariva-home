@@ -615,6 +615,35 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ── Telegram: find chat ID ────────────────────────────────────────
+    if (pathname === '/api/telegram/setup' && req.method === 'GET') {
+      const TG = env.TELEGRAM_BOT_TOKEN;
+      if (!TG) { json(res, 400, { error: 'TELEGRAM_BOT_TOKEN not in env' }); return; }
+      const r = await new Promise(resolve => {
+        https.get(`https://api.telegram.org/bot${TG}/getUpdates`, tgRes => {
+          let d = ''; tgRes.on('data', c => d += c);
+          tgRes.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve({ ok: false }); } });
+        }).on('error', () => resolve({ ok: false }));
+      });
+      const chats = [];
+      if (r.ok && r.result) {
+        r.result.forEach(u => {
+          const chat = u.message?.chat || u.channel_post?.chat || u.my_chat_member?.chat;
+          if (chat && !chats.find(c => c.id === chat.id)) {
+            chats.push({ id: chat.id, type: chat.type, name: chat.title || chat.first_name || chat.username || 'Unknown' });
+          }
+        });
+      }
+      json(res, 200, {
+        found: chats.length,
+        chats,
+        next: chats.length === 0
+          ? 'Go to Telegram → open your bot → send it any message (e.g. "hello") → then reload this URL.'
+          : 'Copy the id you want and add TELEGRAM_CHAT_ID to your .env and Render env vars.'
+      });
+      return;
+    }
+
     // ── Static files ─────────────────────────────────────────────────
     const safePath = pathname === '/' ? '/index.html' : pathname;
     staticFile(res, path.join(__dirname, 'public', safePath));
@@ -633,3 +662,16 @@ server.listen(PORT, HOST, () => {
   console.log(`  http://${HOST}:${PORT}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 });
+
+// ── Keep n8n awake: ping every 4 min from this server ─────────────────
+// Render free services sleep after 15min of no inbound traffic.
+// This dashboard receives browser traffic, so it stays alive and can
+// act as an external pinger to keep the n8n instance from sleeping.
+const N8N_HOST = new URL(env.N8N_URL || 'https://clariva-n8n.onrender.com').hostname;
+function pingN8n() {
+  https.get({ hostname: N8N_HOST, path: '/healthz', timeout: 10000 }, r => {
+    console.log(`[keepalive] n8n ping → ${r.statusCode}`);
+  }).on('error', () => console.log('[keepalive] n8n ping failed (sleeping)'));
+}
+pingN8n(); // ping once on startup
+setInterval(pingN8n, 4 * 60 * 1000); // then every 4 minutes
