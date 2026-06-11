@@ -105,8 +105,30 @@ function staticFile(res, filePath) {
   });
 }
 
+// ── Commander: regex pre-classifier (works without OpenAI) ─────────────
+function quickClassify(message) {
+  const m = message.trim();
+  // Research: "Research products: glass canister set" / "Find me bamboo organizers" / "Run research for..."
+  const resMatch = m.match(/^(?:research(?:\s+products?)?|find(?:\s+(?:me|products?))?|search(?:\s+for)?|run research(?:\s+for)?)[:\-\s]+(.+)/i);
+  if (resMatch) {
+    const kw = resMatch[1].trim().replace(/\.$/, '');
+    return { intent: 'research', params: { keywords: kw }, response: `Research queued for "${kw}".` };
+  }
+  // Agent toggle: "Enable research agent" / "Turn off pricing agent"
+  const enableMatch  = m.match(/(?:enable|turn on|start)\s+(\w+)\s+agent/i);
+  const disableMatch = m.match(/(?:disable|turn off|stop|pause)\s+(\w+)\s+agent/i);
+  if (enableMatch)  return { intent: 'agent_toggle', params: { agent: enableMatch[1].toLowerCase(),  action: 'enable'  }, response: `${enableMatch[1]} Agent enabled.`  };
+  if (disableMatch) return { intent: 'agent_toggle', params: { agent: disableMatch[1].toLowerCase(), action: 'disable' }, response: `${disableMatch[1]} Agent disabled.` };
+  // Niche change: "Change niche to X" / "Switch category to X"
+  const nicheMatch = m.match(/(?:change|switch|update)\s+(?:niche|categor\w*)\s+to\s+(.+)/i);
+  if (nicheMatch) return { intent: 'niche_change', params: { niche: nicheMatch[1].trim(), keywords: nicheMatch[1].trim() }, response: `Evaluating niche change to "${nicheMatch[1].trim()}".` };
+  return null;
+}
+
 // ── Commander AI ────────────────────────────────────────────────────────
 async function classifyCommand(message) {
+  const quick = quickClassify(message);
+  if (quick) return quick;
   if (!OPENAI_KEY) return { intent: 'general', params: {}, response: 'Command saved. Agents will pick it up.' };
   return new Promise(resolve => {
     const system = `You are a command router for Clariva Home dropshipping business OS. Parse the owner instruction and return ONLY valid JSON:
@@ -164,6 +186,14 @@ async function processCommand(cmdId, message) {
       agentName = 'Research Agent';
       const kw = intent.params?.keywords;
       if (kw) await supa('/business_settings?key=eq.research.keywords', 'PATCH', { value: kw, updated_at: new Date().toISOString() });
+      // Fire n8n Research Agent webhook immediately
+      const n8nUrl = env.N8N_URL;
+      if (n8nUrl) {
+        const payload = JSON.stringify({ keywords: kw, source: 'commander' });
+        https.request({ hostname: new URL(n8nUrl).hostname, path: '/webhook/research-trigger', method: 'POST', timeout: 5000,
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }
+        }, () => {}).on('error', () => {}).end(payload);
+      }
       result = `Research queued for "${kw || 'current keywords'}". New candidates will appear in Candidates when complete.`;
     }
 

@@ -611,7 +611,12 @@ async function fulfillment() {
 
 // ── MODULE: Commander ─────────────────────────────────────────
 async function commander() {
-  const cmds = await api('/api/commands');
+  const [cmds, agentLogs] = await Promise.all([
+    api('/api/commands'),
+    api('/api/agents').catch(() => []),
+  ]);
+
+  const lastRes = (agentLogs || []).find(l => (l.payload?.agent || '').toLowerCase().includes('research'));
 
   const statusBadge = s => {
     const map = {
@@ -633,19 +638,45 @@ async function commander() {
       ${c.agent  ? `<div class="cmd-agent">Picked up by <strong>${c.agent}</strong></div>` : ''}
       ${c.result ? `<div class="cmd-result">${c.result}</div>` : ''}
       <div class="cmd-ts">${timeAgo(c.created_at)}</div>
-    </div>`).join('') : `<div class="cmd-empty">No commands sent yet. Type your first instruction below.</div>`;
+    </div>`).join('') : `<div class="cmd-empty">No commands sent yet.</div>`;
+
+  const PRESETS = [
+    'Glass canister set',
+    'Bamboo drawer organizer',
+    'Spice rack organizer',
+    'Pantry storage container',
+    'Kitchen counter organizer',
+    'Under-sink storage',
+    'Ceramic canister set',
+    'Stainless steel organizer',
+  ];
 
   return `
-    <div class="cmd-explainer">
-      Type any instruction — the agents check this queue and act on it. Examples:<br>
-      <em>"Research 10 home organizer products priced under $40"</em> &nbsp;·&nbsp;
-      <em>"Update all product prices by +10%"</em> &nbsp;·&nbsp;
-      <em>"Pause all ad campaigns"</em>
+    <div class="panel rql-panel">
+      <div class="pnl-title">Research Quick Launch</div>
+      <div class="rql-info">Pick a keyword to run the Research Agent immediately — or type your own below.</div>
+      <div class="rql-chips">
+        ${PRESETS.map(kw => `<button class="rql-chip" data-kw="${kw}">${kw}</button>`).join('')}
+      </div>
+      <div class="rql-custom">
+        <input class="ctrl-input" id="rqlKeywords" placeholder="Custom keywords (e.g. bamboo drawer organizer)…" style="flex:1;min-width:0">
+        <button class="ctrl-btn" id="rqlRun">Run Research Now</button>
+      </div>
+      <div class="rql-status" id="rqlStatus">${lastRes ? `Last research run: ${timeAgo(lastRes.ts || lastRes.created_at)} &nbsp;·&nbsp; ${(lastRes.payload?.exec_summary||'').slice(0,80)}` : 'No research runs recorded yet.'}</div>
     </div>
-    <div class="cmd-history" id="cmdHistory">${history}</div>
-    <div class="cmd-input-wrap">
-      <textarea id="cmdText" class="cmd-textarea" rows="2" placeholder="Tell your agents what to do…"></textarea>
-      <button class="cmd-send" id="cmdSend">Send</button>
+    <div class="panel" style="margin-top:0">
+      <div class="pnl-title">Command History</div>
+      <div class="cmd-explainer">
+        Type any instruction — agents check this queue. Examples:<br>
+        <em>"Update all product prices by +10%"</em> &nbsp;·&nbsp;
+        <em>"Pause all ad campaigns"</em> &nbsp;·&nbsp;
+        <em>"Reject all products with margin below 35%"</em>
+      </div>
+      <div class="cmd-history" id="cmdHistory">${history}</div>
+      <div class="cmd-input-wrap">
+        <textarea id="cmdText" class="cmd-textarea" rows="2" placeholder="Tell your agents what to do…"></textarea>
+        <button class="cmd-send" id="cmdSend">Send</button>
+      </div>
     </div>`;
 }
 
@@ -841,7 +872,7 @@ function bind() {
     });
   });
 
-  // Research on demand
+  // Research on demand (Candidates page form)
   document.getElementById('resSubmit')?.addEventListener('click', async () => {
     const btn = document.getElementById('resSubmit');
     const keywords = document.getElementById('resKeywords')?.value.trim();
@@ -850,8 +881,37 @@ function bind() {
     if (!keywords) { document.getElementById('resKeywords')?.focus(); return; }
     btn.disabled = true; btn.textContent = 'Queuing…';
     await fetch('/api/trigger/research', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ keywords, category, max_cost: maxCost }) });
-    btn.textContent = '✓ Research queued — check Commander for status';
+    btn.textContent = '✓ Queued';
     setTimeout(() => go('commander'), 2000);
+  });
+
+  // Research Quick Launch — preset chips
+  async function triggerResearch(keywords, triggerEl) {
+    if (triggerEl) { triggerEl.disabled = true; triggerEl.classList.add('rql-chip-loading'); }
+    const statusEl = document.getElementById('rqlStatus');
+    if (statusEl) statusEl.textContent = 'Queuing research for: ' + keywords + '…';
+    try {
+      await fetch('/api/trigger/research', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ keywords }) });
+      if (statusEl) statusEl.textContent = 'Research queued for "' + keywords + '" — agent will process shortly.';
+      if (triggerEl) { triggerEl.classList.remove('rql-chip-loading'); triggerEl.classList.add('rql-chip-sent'); triggerEl.disabled = false; }
+      setTimeout(() => { if (triggerEl) triggerEl.classList.remove('rql-chip-sent'); }, 4000);
+    } catch(e) {
+      if (statusEl) statusEl.textContent = 'Error: ' + e.message;
+      if (triggerEl) { triggerEl.disabled = false; triggerEl.classList.remove('rql-chip-loading'); }
+    }
+  }
+
+  document.querySelectorAll('.rql-chip').forEach(chip => {
+    chip.addEventListener('click', () => triggerResearch(chip.dataset.kw, chip));
+  });
+
+  document.getElementById('rqlRun')?.addEventListener('click', async () => {
+    const btn = document.getElementById('rqlRun');
+    const kw  = document.getElementById('rqlKeywords')?.value.trim();
+    if (!kw) { document.getElementById('rqlKeywords')?.focus(); return; }
+    await triggerResearch(kw, null);
+    btn.textContent = '✓ Queued';
+    setTimeout(() => { btn.textContent = 'Run Research Now'; }, 3000);
   });
 
   // Commander send
