@@ -139,6 +139,14 @@ async function processCommand(cmdId, message) {
       agentName = 'Research Agent';
       const niche = intent.params?.niche || intent.params?.keywords || message;
       const kw    = intent.params?.keywords || niche;
+      // Section A1: Niche is locked to Elevated Kitchen & Pantry Organization.
+      // Block changes to non-kitchen niches.
+      const KITCHEN_TERMS = /kitchen|pantry|organiz|storage|canister|bamboo|glass.*storage|drawer|spice|counter|under.sink/i;
+      if (!KITCHEN_TERMS.test(niche) && !KITCHEN_TERMS.test(kw)) {
+        result = 'Niche is locked to Elevated Kitchen & Pantry Organization (Section A1). Research keywords can be refined within that niche, but the niche cannot be changed. Use a research command to search for specific kitchen/pantry products instead.';
+        await supa(`/user_commands?id=eq.${encodeURIComponent(cmdId)}`, 'PATCH', { status: 'done', agent: 'Commander', result, updated_at: new Date().toISOString() });
+        return;
+      }
       // Update research settings, clear candidates + pending research decisions, queue fresh research
       await Promise.all([
         supa('/business_settings?key=eq.research.keywords', 'PATCH', { value: kw, updated_at: new Date().toISOString() }),
@@ -641,6 +649,43 @@ const server = http.createServer(async (req, res) => {
           ? 'Go to Telegram → open your bot → send it any message (e.g. "hello") → then reload this URL.'
           : 'Copy the id you want and add TELEGRAM_CHAT_ID to your .env and Render env vars.'
       });
+      return;
+    }
+
+    // ── Brand Standard Validator (Section C7) ───────────────────────
+    if (pathname === '/api/validate/brand-standard' && req.method === 'POST') {
+      let body = ''; req.on('data', c => body += c);
+      await new Promise(r => req.on('end', r));
+      const { text = '', type = 'copy' } = JSON.parse(body || '{}');
+      const violations = [];
+      const EMOJI_RE   = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/u;
+      const EXCLAIM_RE = /!/;
+      const HYPE_RE    = /\b(insane|game.changer|must.have|hot selling|trending now|going viral|limited time|act now|don.t miss|flash sale|you won.t believe|blowing up|crazy good|insanely|game changing)\b/i;
+      const ALL_CAPS   = /[A-Z]{4,}/;
+      const COUNTDOWN  = /\d+\s*(hr|hour|min|minute|sec|second)s?\s*(left|only|remaining)/i;
+      if (EMOJI_RE.test(text))    violations.push({ rule:'C2', issue:'Contains emoji', excerpt: text.match(EMOJI_RE)?.[0] });
+      if (EXCLAIM_RE.test(text))  violations.push({ rule:'C2', issue:'Contains exclamation mark' });
+      if (HYPE_RE.test(text))     violations.push({ rule:'C2', issue:'Hype vocabulary detected', excerpt: text.match(HYPE_RE)?.[0] });
+      if (ALL_CAPS.test(text))    violations.push({ rule:'C2', issue:'All-caps text detected', excerpt: text.match(ALL_CAPS)?.[0] });
+      if (COUNTDOWN.test(text))   violations.push({ rule:'C2', issue:'Countdown / scarcity language detected' });
+      const NICHE_KEYWORDS = /glass|bamboo|steel|silicone|ceramic|organiz|storage|pantry|kitchen|canister|jar|drawer|spice|rack|holder|container/i;
+      if (type === 'copy' && text.length > 80 && !NICHE_KEYWORDS.test(text))
+        violations.push({ rule:'C5', issue:'Copy is not materials-led — no niche keywords found. Add material or product type reference.' });
+      const pass = violations.length === 0;
+      await supa('/agent_logs', 'POST', {
+        level: pass ? 'info' : 'warn',
+        event: 'brand_validator',
+        payload: { type, pass, violations, text_length: text.length },
+        ts: new Date().toISOString()
+      }).catch(() => {});
+      json(res, 200, { pass, violations, text_length: text.length });
+      return;
+    }
+
+    // ── Business Rules API ─────────────────────────────────────────
+    if (pathname === '/api/rules' && req.method === 'GET') {
+      const r = await supa('/business_rules?order=section.asc,rule_key.asc');
+      json(res, 200, Array.isArray(r.data) ? r.data : []);
       return;
     }
 

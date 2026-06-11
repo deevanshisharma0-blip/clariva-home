@@ -323,7 +323,7 @@ async function candidates() {
       <div class="ctrl-form">
         <div class="ctrl-field">
           <label class="ctrl-lbl">Keywords / Product Type</label>
-          <input class="ctrl-input" id="resKeywords" placeholder="e.g. home decor organizer, minimalist lamp" />
+          <input class="ctrl-input" id="resKeywords" placeholder="e.g. glass canister set, bamboo drawer organizer, spice rack" />
         </div>
         <div class="ctrl-field">
           <label class="ctrl-lbl">Category</label>
@@ -345,7 +345,7 @@ async function candidates() {
     <div class="panel" style="margin-top:12px">
       <div class="pnl-title">Request Specific Research</div>
       <div class="ctrl-form">
-        <input class="ctrl-input" id="resKeywords" placeholder="Keywords / product type (e.g. home decor organizer)" style="flex:1" />
+        <input class="ctrl-input" id="resKeywords" placeholder="Keywords / product type (e.g. glass canister set, bamboo drawer organizer)" style="flex:1" />
         <button class="ctrl-btn" id="resSubmit">Run Research Agent</button>
       </div>
     </div>`;
