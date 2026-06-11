@@ -301,7 +301,12 @@ const server = http.createServer(async (req, res) => {
     if (actionMatch && req.method === 'POST') {
       const [, id, action] = actionMatch;
       const newState = action === 'approve' ? 'approved' : 'rejected';
-      await supa(`/decisions?id=eq.${encodeURIComponent(id)}`, 'PATCH', { state: newState });
+      const now = new Date().toISOString();
+      await supa(`/decisions?id=eq.${encodeURIComponent(id)}`, 'PATCH', {
+        state: newState,
+        resolved_at: now,
+        updated_at:  now,
+      });
       json(res, 200, { ok: true, id, state: newState });
       return;
     }
