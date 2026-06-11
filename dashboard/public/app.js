@@ -181,7 +181,7 @@ function productCard(d, stageNum=1) {
   ].filter(Boolean).join(' · ');
 
   const cjLink      = e.cj_product_ref ? `https://app.cjdropshipping.com/product-detail.html?id=${e.cj_product_ref}` : null;
-  const shopifyLink = e.shopify_gid    ? `https://lumera-aura.myshopify.com/admin/products/${e.shopify_gid.split('/').pop()}` : null;
+  const shopifyLink = e.shopify_gid    ? `https://clarivahome.myshopify.com/admin/products/${e.shopify_gid.split('/').pop()}` : null;
 
   const bars = [
     {lbl:'Demand',      k:'demand'},
@@ -748,7 +748,7 @@ async function settings() {
   return `
   <div class="panel">
     <div class="pnl-title">Connections</div>
-    <div class="set-row"><span class="set-k">Shopify</span><span class="set-v">lumera-aura.myshopify.com</span><span class="${shopOk?'set-ok':'set-err'}">${shopOk?'● Connected':'● Error'}</span></div>
+    <div class="set-row"><span class="set-k">Shopify</span><span class="set-v">clarivahome.myshopify.com</span><span class="${shopOk?'set-ok':'set-err'}">${shopOk?'● Connected':'● Error'}</span></div>
     <div class="set-row"><span class="set-k">Products in Store</span><span class="set-v">${kpis?.shopifyProductCount??'—'}</span></div>
     <div class="set-row"><span class="set-k">Supabase</span><span class="set-v">qjclbnbzntdxfjuomdwr.supabase.co</span><span class="set-ok">● Connected</span></div>
     <div class="set-row"><span class="set-k">n8n Agents</span><span class="set-v">clariva-n8n.onrender.com</span><span class="set-ok">● Running</span></div>
